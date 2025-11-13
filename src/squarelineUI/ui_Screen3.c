@@ -47,10 +47,8 @@ lv_obj_set_style_border_opa(ui_Bar1, 255, LV_PART_INDICATOR| LV_STATE_DEFAULT);
 //Compensating for LVGL9.1 draw crash with bar/slider max value when top-padding is nonzero and right-padding is 0
 if (lv_obj_get_style_pad_top(ui_Bar1,LV_PART_MAIN) > 0) lv_obj_set_style_pad_right( ui_Bar1, lv_obj_get_style_pad_right(ui_Bar1,LV_PART_MAIN) + 1, LV_PART_MAIN );
 ui_Arc2 = lv_arc_create(ui_Screen3);
-lv_obj_set_width( ui_Arc2, 400);
-lv_obj_set_height( ui_Arc2, 400);
-lv_obj_set_x( ui_Arc2, 2 );
-lv_obj_set_y( ui_Arc2, 0 );
+lv_obj_set_width( ui_Arc2, 480);
+lv_obj_set_height( ui_Arc2, 480);
 lv_obj_set_align( ui_Arc2, LV_ALIGN_CENTER );
 lv_obj_remove_flag( ui_Arc2, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_PRESS_LOCK | LV_OBJ_FLAG_CLICK_FOCUSABLE | LV_OBJ_FLAG_GESTURE_BUBBLE | LV_OBJ_FLAG_SNAPPABLE );    /// Flags
 lv_arc_set_value(ui_Arc2, 50);
@@ -64,18 +62,18 @@ lv_obj_set_style_bg_color(ui_Arc2, lv_color_hex(0xFFFFFF), LV_PART_KNOB | LV_STA
 lv_obj_set_style_bg_opa(ui_Arc2, 0, LV_PART_KNOB| LV_STATE_DEFAULT);
 
 ui_Panel6 = lv_obj_create(ui_Screen3);
-lv_obj_set_width( ui_Panel6, 335);
+lv_obj_set_width( ui_Panel6, 380);
 lv_obj_set_height( ui_Panel6, 2);
-lv_obj_set_x( ui_Panel6, 3 );
-lv_obj_set_y( ui_Panel6, 91 );
+lv_obj_set_x( ui_Panel6, 0 );
+lv_obj_set_y( ui_Panel6, 130 );
 lv_obj_set_align( ui_Panel6, LV_ALIGN_CENTER );
 lv_obj_remove_flag( ui_Panel6, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 
 ui_Label20 = lv_label_create(ui_Screen3);
 lv_obj_set_width( ui_Label20, LV_SIZE_CONTENT);  /// 1
 lv_obj_set_height( ui_Label20, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label20, 0 );
-lv_obj_set_y( ui_Label20, 125 );
+lv_obj_set_x( ui_Label20, 1 );
+lv_obj_set_y( ui_Label20, 180 );
 lv_obj_set_align( ui_Label20, LV_ALIGN_CENTER );
 lv_label_set_text(ui_Label20,"<");
 lv_obj_set_style_text_color(ui_Label20, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
@@ -83,10 +81,10 @@ lv_obj_set_style_text_opa(ui_Label20, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_text_font(ui_Label20, &lv_font_montserrat_48, LV_PART_MAIN| LV_STATE_DEFAULT);
 
 ui_Button5 = lv_button_create(ui_Screen3);
-lv_obj_set_width( ui_Button5, 173);
-lv_obj_set_height( ui_Button5, 82);
-lv_obj_set_x( ui_Button5, 4 );
-lv_obj_set_y( ui_Button5, 135 );
+lv_obj_set_width( ui_Button5, 280);
+lv_obj_set_height( ui_Button5, 62);
+lv_obj_set_x( ui_Button5, 3 );
+lv_obj_set_y( ui_Button5, 167 );
 lv_obj_set_align( ui_Button5, LV_ALIGN_CENTER );
 lv_obj_add_flag( ui_Button5, LV_OBJ_FLAG_SCROLL_ON_FOCUS );   /// Flags
 lv_obj_remove_flag( ui_Button5, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
@@ -98,7 +96,7 @@ lv_obj_set_style_shadow_opa(ui_Button5, 0, LV_PART_MAIN| LV_STATE_DEFAULT);
 ui_Container17 = lv_obj_create(ui_Screen3);
 lv_obj_remove_style_all(ui_Container17);
 lv_obj_set_width( ui_Container17, 300);
-lv_obj_set_height( ui_Container17, 224);
+lv_obj_set_height( ui_Container17, 295);
 lv_obj_set_x( ui_Container17, 1 );
 lv_obj_set_y( ui_Container17, -22 );
 lv_obj_set_align( ui_Container17, LV_ALIGN_CENTER );
@@ -114,9 +112,9 @@ lv_obj_set_style_bg_opa(ui_Container17, 150, LV_PART_SCROLLBAR| LV_STATE_DEFAULT
 ui_Container12 = lv_obj_create(ui_Container17);
 lv_obj_remove_style_all(ui_Container12);
 lv_obj_set_width( ui_Container12, 305);
-lv_obj_set_height( ui_Container12, 197);
-lv_obj_set_x( ui_Container12, 2 );
-lv_obj_set_y( ui_Container12, 11 );
+lv_obj_set_height( ui_Container12, 316);
+lv_obj_set_x( ui_Container12, -3 );
+lv_obj_set_y( ui_Container12, -9 );
 lv_obj_set_align( ui_Container12, LV_ALIGN_CENTER );
 lv_obj_set_flex_flow(ui_Container12,LV_FLEX_FLOW_ROW);
 lv_obj_set_flex_align(ui_Container12, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
@@ -211,8 +209,8 @@ ui_Container13 = lv_obj_create(ui_Screen3);
 lv_obj_remove_style_all(ui_Container13);
 lv_obj_set_width( ui_Container13, 104);
 lv_obj_set_height( ui_Container13, 45);
-lv_obj_set_x( ui_Container13, 8 );
-lv_obj_set_y( ui_Container13, -164 );
+lv_obj_set_x( ui_Container13, 0 );
+lv_obj_set_y( ui_Container13, -200 );
 lv_obj_set_align( ui_Container13, LV_ALIGN_CENTER );
 lv_obj_set_flex_flow(ui_Container13,LV_FLEX_FLOW_ROW);
 lv_obj_set_flex_align(ui_Container13, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);

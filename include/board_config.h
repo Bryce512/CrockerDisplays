@@ -46,6 +46,16 @@
   
   // Backlight
   #define BL_PIN 38
+  
+  // RGB Panel timing parameters (4" square)
+  #define HSYNC_POLARITY 1
+  #define HSYNC_FRONT_PORCH 10
+  #define HSYNC_PULSE_WIDTH 8
+  #define HSYNC_BACK_PORCH 50
+  #define VSYNC_POLARITY 1
+  #define VSYNC_FRONT_PORCH 10
+  #define VSYNC_PULSE_WIDTH 8
+  #define VSYNC_BACK_PORCH 20
 
 #elif BOARD_TYPE == 2
   // 2.8" Round Display (ESP32-S3-8048S070)

@@ -1,14 +1,15 @@
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
+#include <Wire.h>
+#include "board_pins.h"
+#include "board_configs.h" // Must be included before ESP32_4848S040.h
 #include <ESP32_4848S040.h>
 #include <lvgl.h>
-#include "touch.h"
 #include "squarelineUI/ui.h"
+#include "touch.h"
+#include "TCA9554PWR.h"
 
-// #define board = "4Square"
-#define board = "2.8"
-
-#define GFX_BL 38
+#define GFX_BL BL_PIN
 Arduino_ESP32SPI* bus;
 Arduino_RGB_Display* gfx;
 
@@ -19,22 +20,14 @@ lv_display_t *display;
 
 
 /* lvgl */
-#define TFT_HOR_RES   480
-#define TFT_VER_RES   480
+#define TFT_HOR_RES   TFT_WIDTH
+#define TFT_VER_RES   TFT_HEIGHT
 #define TFT_ROTATION  LV_DISPLAY_ROTATION_0
 
 /*LVGL draw into this buffer, 1/10 screen size usually works well. The size is in bytes*/
 #define DRAW_BUF_SIZE (TFT_HOR_RES * TFT_VER_RES / 10 * (LV_COLOR_DEPTH / 8))
 uint32_t draw_buf[DRAW_BUF_SIZE / 4];
 
-
-// Relay config (gpio)
-#define GPIO_RELAY1  40
-#define GPIO_RELAY2  2
-#define GPIO_RELAY3  1
-
-
-int i = 0;
 
 /* Display flushing */
 void my_disp_flush( lv_display_t *disp, const lv_area_t *area, uint8_t * px_map)
@@ -85,61 +78,117 @@ void setup()
 {
   Serial.begin(115200);
   Serial.println("Setup...");
-  touch_init();
 
-  // 9-bit mode SPI
-  bus = new Arduino_ESP32SPI(
-  GFX_NOT_DEFINED /* DC */, 39 /* CS */, 48 /* SCK */, 47 /* MOSI */, GFX_NOT_DEFINED /* MISO */);
+  #if BOARD_TYPE == 1 
+    bus = new Arduino_ESP32SPI(
+      GFX_NOT_DEFINED /* DC */, 39 /* CS */, 48 /* SCK */, 47 /* MOSI */, GFX_NOT_DEFINED /* MISO */);
 
-  // panel (Hardware) specific
-  // Swap R and B GPIO pins
+  #elif BOARD_TYPE == 2
+    // ===== STEP 1: Initialize I2C for PCA9554 =====
+    Serial.println("Initializing I2C...");
+    Wire.begin(TOUCH_SDA, TOUCH_SCL);  // SDA=15, SCL=7
+    delay(50);
+    
+    // ===== STEP 2: Initialize PCA9554 (all pins as outputs) =====
+    Serial.println("Initializing PCA9554...");
+    TCA9554PWR_Init(0x00);  // All pins as outputs
+    delay(10);
+
+    Set_EXIO(EXIO_PIN8, Low);  // Buzzer OFF
+    delay(10);
+    
+    // ===== STEP 3: Reset Display =====
+    Serial.println("Resetting display...");
+    Set_EXIO(EXIO_PIN1, Low);   // Display reset LOW
+    delay(100);
+    Set_EXIO(EXIO_PIN1, High);  // Display reset HIGH
+    delay(100);
+    
+    // ===== STEP 4: Reset Touch =====
+    Serial.println("Resetting touch...");
+    Set_EXIO(EXIO_PIN2, Low);   // Touch reset LOW
+    delay(100);
+    Set_EXIO(EXIO_PIN2, High);  // Touch reset HIGH
+    delay(100);
+    
+    // ===== STEP 5: Initialize SPI bus =====
+    Serial.println("Initializing SPI bus...");
+    bus = new Arduino_ESP32SPI(
+      GFX_NOT_DEFINED /* DC */, 
+      GFX_NOT_DEFINED /* CS */, 
+      2 /* SCK */, 
+      1 /* MOSI */, 
+      GFX_NOT_DEFINED /* MISO */
+    );
+    
+    // ===== STEP 6: Set CS active (LOW) for display initialization =====
+    Set_EXIO(EXIO_PIN3, Low);  // CS LOW (active)
+  #endif
+  
+  // ===== STEP 7: Initialize RGB Panel =====
+  Serial.println("Initializing RGB panel...");
   Arduino_ESP32RGBPanel *rgbpanel = new Arduino_ESP32RGBPanel(
-    18 /* DE */, 17 /* VSYNC */, 16 /* HSYNC */, 21 /* PCLK */,
-    11 /* R0 */, 12 /* R1 */, 13 /* R2 */, 14 /* R3 */, 0 /* R4 */,
-    8 /* G0 */, 20 /* G1 */, 3 /* G2 */, 46 /* G3 */, 9 /* G4 */, 10 /* G5 */,
-    4 /* B0 */, 5 /* B1 */, 6 /* B2 */, 7 /* B3 */, 15 /* B4 */,
-    1 /* hsync_polarity */, 10 /* hsync_front_porch */, 8 /* hsync_pulse_width */, 50 /* hsync_back_porch */,
-    1 /* vsync_polarity */, 10 /* vsync_front_porch */, 8 /* vsync_pulse_width */, 20 /* vsync_back_porch */);
+    DE_PIN, VSYNC_PIN, HSYNC_PIN, PCLK_PIN,
+    R0_PIN, R1_PIN, R2_PIN, R3_PIN, R4_PIN,
+    G0_PIN, G1_PIN, G2_PIN, G3_PIN, G4_PIN, G5_PIN,
+    B0_PIN, B1_PIN, B2_PIN, B3_PIN, B4_PIN,
+    HSYNC_POLARITY, HSYNC_FRONT_PORCH, HSYNC_PULSE_WIDTH, HSYNC_BACK_PORCH,
+    VSYNC_POLARITY, VSYNC_FRONT_PORCH, VSYNC_PULSE_WIDTH, VSYNC_BACK_PORCH);
 
-  // panel parameters & setup
-  gfx = new Arduino_RGB_Display(
-    480 /* width */, 480 /* height */, rgbpanel, 0 /* rotation */, true /* auto_flush */,
-    bus, GFX_NOT_DEFINED /* RST */, st7701_4848s040_init_operations, sizeof(st7701_4848s040_init_operations));
+  // ===== STEP 8: Create GFX Display Object =====
+  #if BOARD_TYPE == 1
+    gfx = new Arduino_RGB_Display(
+      TFT_WIDTH, TFT_HEIGHT, rgbpanel, 0, true, bus, 
+      GFX_NOT_DEFINED, st7701_square_init_operations, sizeof(st7701_square_init_operations));
+  #elif BOARD_TYPE == 2
+    gfx = new Arduino_RGB_Display(
+      TFT_WIDTH, TFT_HEIGHT, rgbpanel, 0, true, bus, 
+      GFX_NOT_DEFINED, st7701_round_init_operations, sizeof(st7701_round_init_operations));
+  #endif
 
-  if (!gfx->begin())
-  {
+  // ===== STEP 9: Initialize Display =====
+  Serial.println("Calling gfx->begin()...");
+  if (!gfx->begin()) {
     Serial.println("gfx->begin() failed!");
   }
-#ifdef GFX_BL
-  pinMode(GFX_BL, OUTPUT);
-  digitalWrite(GFX_BL, HIGH);
-#endif
 
-  gfx->setCursor(100, 200);
-  gfx->displayOn();
+  // ===== STEP 10: Set CS inactive (HIGH) after initialization =====
+  #if BOARD_TYPE == 2
+    Set_EXIO(EXIO_PIN3, High);  // CS HIGH (inactive)
+  #endif
+
+  // ===== STEP 11: Enable Backlight =====
+  #ifdef GFX_BL
+    pinMode(GFX_BL, OUTPUT);
+    digitalWrite(GFX_BL, HIGH);
+  #endif
+
   gfx->fillScreen(BLACK);
   gfx->setTextColor(BLUE);
-  gfx->setTextSize(6 /* x scale */, 6 /* y scale */, 2 /* pixel_margin */);
-  gfx->println("Prout !");
+  gfx->setTextSize(6, 6, 2);
+  gfx->println("Initializing...");
 
-  /* Configuration LVGL */
+  // ===== STEP 12: Initialize Touch (AFTER PCA9554) =====
+  Serial.println("Initializing touch...");
+  touch_init();
+
+  // ===== STEP 13: Initialize LVGL =====
+  Serial.println("Initializing LVGL...");
   lv_init();
-
-  /*Set a tick source so that LVGL will know how much time elapsed. */
   lv_tick_set_cb(my_tick);
-  lv_display_t * disp;
-  disp = lv_display_create(TFT_HOR_RES, TFT_VER_RES);
+  
+  lv_display_t * disp = lv_display_create(TFT_HOR_RES, TFT_VER_RES);
   lv_display_set_flush_cb(disp, my_disp_flush);
   lv_display_set_buffers(disp, draw_buf, NULL, sizeof(draw_buf), LV_DISPLAY_RENDER_MODE_PARTIAL);
 
-  // Touch Driver
   lv_indev_t * indev = lv_indev_create();
-  lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);   /*See below.*/
+  lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
   lv_indev_set_read_cb(indev, my_touchpad_read);
 
-  // build GUI
   ui_init();
   lv_scr_load(ui_Screen1);
+  
+  Serial.println("Setup complete!");
 }
 
 void loop()

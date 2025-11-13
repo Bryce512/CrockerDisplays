@@ -1,4 +1,5 @@
 #include "touch.h"
+#include "board_pins.h"
 
 int touch_last_x = 0, touch_last_y = 0;
 Touch_GT911 ts = Touch_GT911(TOUCH_GT911_SDA, TOUCH_GT911_SCL, TOUCH_GT911_INT, TOUCH_GT911_RST, max(TOUCH_MAP_X1, TOUCH_MAP_X2), max(TOUCH_MAP_Y1, TOUCH_MAP_Y2));
@@ -6,9 +7,16 @@ Touch_GT911 ts = Touch_GT911(TOUCH_GT911_SDA, TOUCH_GT911_SCL, TOUCH_GT911_INT, 
 
 void touch_init()
 {
-  Wire.begin(TOUCH_GT911_SDA, TOUCH_GT911_SCL);
-  ts.begin();
-  ts.setRotation(TOUCH_GT911_ROTATION);
+    if (BOARD_TYPE == 1) {
+      Wire.begin(TOUCH_GT911_SDA, TOUCH_GT911_SCL);
+      ts.begin();
+      ts.setRotation(TOUCH_GT911_ROTATION);
+  } else {
+    // Don't call touch_init() - it will reinitialize Wire!
+    // Instead, just initialize the touch sensor directly
+      ts.begin();  // Initialize the GT911 touch sensor
+      ts.setRotation(TOUCH_GT911_ROTATION);
+  }
 }
 
 bool touch_has_signal()
