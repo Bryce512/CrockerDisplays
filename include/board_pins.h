@@ -2,7 +2,7 @@
 #define BOARD_PINS_H
 
 // Select your board: 1 for 4" square, 2 for 2.8" round
-#define BOARD_TYPE 1  // Change to 2 for 2.8" round display
+#define BOARD_TYPE 1 // Change to 2 for 2.8" round display
 
 #if BOARD_TYPE == 1
   // 4.0" Square Display (ESP32-4848S040)
