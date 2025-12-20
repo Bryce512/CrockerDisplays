@@ -17,16 +17,16 @@ extern lv_obj_t *ui_Screen1;
 extern lv_obj_t *ui_Image1;
 extern lv_obj_t *ui_textBackground;
 extern lv_obj_t *ui_eventOverlay;
-extern lv_obj_t *ui_divider;
-extern lv_obj_t *ui_eventLabel;
 extern lv_obj_t *ui_timer_arc;
+extern lv_obj_t *ui_Image5;
 extern void ui_event_pageChangeButton( lv_event_t * e);
 extern lv_obj_t *ui_pageChangeButton;
+extern lv_obj_t *ui_Container5;
 extern lv_obj_t *ui_timeLabel;
+extern lv_obj_t *ui_eventLabel;
 extern lv_obj_t *ui_Container14;
 extern lv_obj_t *ui_batteryBar3;
 extern lv_obj_t *ui_batteryPercent3;
-extern lv_obj_t *ui_Label2;
 // CUSTOM VARIABLES
 extern lv_obj_t *uic_Arc3;
 

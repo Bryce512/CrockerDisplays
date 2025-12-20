@@ -5,7 +5,7 @@
 
 #include "ui.h"
 
-lv_obj_t *ui_Screen2 = NULL;lv_obj_t *ui_Panel7 = NULL;lv_obj_t *ui_Arc6 = NULL;lv_obj_t *ui_dividerTop = NULL;lv_obj_t *ui_dividerBot = NULL;lv_obj_t *ui_timer_arc3 = NULL;lv_obj_t *ui_Button3 = NULL;lv_obj_t *ui_Label5 = NULL;lv_obj_t *ui_Container2 = NULL;lv_obj_t *ui_Container3 = NULL;lv_obj_t *ui_Label7 = NULL;lv_obj_t *ui_Label6 = NULL;lv_obj_t *ui_Container6 = NULL;lv_obj_t *ui_Label12 = NULL;lv_obj_t *ui_Label13 = NULL;lv_obj_t *ui_Container7 = NULL;lv_obj_t *ui_Label15 = NULL;lv_obj_t *ui_Label10 = NULL;lv_obj_t *ui_Container8 = NULL;lv_obj_t *ui_Label17 = NULL;lv_obj_t *ui_Label14 = NULL;lv_obj_t *ui_Container9 = NULL;lv_obj_t *ui_Label18 = NULL;lv_obj_t *ui_Label19 = NULL;lv_obj_t *ui_Container1 = NULL;lv_obj_t *ui_Label1 = NULL;lv_obj_t *ui_Label3 = NULL;lv_obj_t *ui_Container4 = NULL;lv_obj_t *ui_Label4 = NULL;lv_obj_t *ui_Label8 = NULL;lv_obj_t *ui_Image9 = NULL;lv_obj_t *ui_Button4 = NULL;lv_obj_t *ui_Panel3 = NULL;
+lv_obj_t *ui_Screen2 = NULL;lv_obj_t *ui_Panel7 = NULL;lv_obj_t *ui_Arc6 = NULL;lv_obj_t *ui_dividerTop = NULL;lv_obj_t *ui_dividerBot = NULL;lv_obj_t *ui_timer_arc3 = NULL;lv_obj_t *ui_Image6 = NULL;lv_obj_t *ui_Button3 = NULL;lv_obj_t *ui_Container2 = NULL;lv_obj_t *ui_Container3 = NULL;lv_obj_t *ui_Label7 = NULL;lv_obj_t *ui_Label6 = NULL;lv_obj_t *ui_Container6 = NULL;lv_obj_t *ui_Label12 = NULL;lv_obj_t *ui_Label13 = NULL;lv_obj_t *ui_Container7 = NULL;lv_obj_t *ui_Label15 = NULL;lv_obj_t *ui_Label10 = NULL;lv_obj_t *ui_Container8 = NULL;lv_obj_t *ui_Label17 = NULL;lv_obj_t *ui_Label14 = NULL;lv_obj_t *ui_Container9 = NULL;lv_obj_t *ui_Label18 = NULL;lv_obj_t *ui_Label19 = NULL;lv_obj_t *ui_Container1 = NULL;lv_obj_t *ui_Label1 = NULL;lv_obj_t *ui_Label3 = NULL;lv_obj_t *ui_Container4 = NULL;lv_obj_t *ui_Label4 = NULL;lv_obj_t *ui_Label8 = NULL;lv_obj_t *ui_Image9 = NULL;lv_obj_t *ui_Button4 = NULL;lv_obj_t *ui_Panel3 = NULL;
 // event funtions
 void ui_event_Button3( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);
@@ -99,6 +99,18 @@ lv_obj_set_style_arc_width(ui_timer_arc3, 30, LV_PART_INDICATOR| LV_STATE_DEFAUL
 lv_obj_set_style_bg_color(ui_timer_arc3, lv_color_hex(0xFFFFFF), LV_PART_KNOB | LV_STATE_DEFAULT );
 lv_obj_set_style_bg_opa(ui_timer_arc3, 0, LV_PART_KNOB| LV_STATE_DEFAULT);
 
+ui_Image6 = lv_image_create(ui_Screen2);
+lv_image_set_src(ui_Image6, &ui_img_rightarrow2_png);
+lv_obj_set_width( ui_Image6, LV_SIZE_CONTENT);  /// 251
+lv_obj_set_height( ui_Image6, LV_SIZE_CONTENT);   /// 200
+lv_obj_set_x( ui_Image6, -3 );
+lv_obj_set_y( ui_Image6, 173 );
+lv_obj_set_align( ui_Image6, LV_ALIGN_CENTER );
+lv_obj_add_flag( ui_Image6, LV_OBJ_FLAG_CLICKABLE );   /// Flags
+lv_obj_remove_flag( ui_Image6, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_image_set_rotation(ui_Image6,600);
+lv_image_set_scale(ui_Image6,100);
+
 ui_Button3 = lv_button_create(ui_Screen2);
 lv_obj_set_width( ui_Button3, 219);
 lv_obj_set_height( ui_Button3, 60);
@@ -111,17 +123,6 @@ lv_obj_set_style_bg_color(ui_Button3, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_
 lv_obj_set_style_bg_opa(ui_Button3, 0, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_shadow_color(ui_Button3, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_shadow_opa(ui_Button3, 0, LV_PART_MAIN| LV_STATE_DEFAULT);
-
-ui_Label5 = lv_label_create(ui_Screen2);
-lv_obj_set_width( ui_Label5, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_Label5, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label5, 0 );
-lv_obj_set_y( ui_Label5, 170 );
-lv_obj_set_align( ui_Label5, LV_ALIGN_CENTER );
-lv_label_set_text(ui_Label5,"<");
-lv_obj_set_style_text_color(ui_Label5, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_text_opa(ui_Label5, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label5, &lv_font_montserrat_48, LV_PART_MAIN| LV_STATE_DEFAULT);
 
 ui_Container2 = lv_obj_create(ui_Screen2);
 lv_obj_remove_style_all(ui_Container2);
@@ -405,8 +406,8 @@ ui_Arc6= NULL;
 ui_dividerTop= NULL;
 ui_dividerBot= NULL;
 ui_timer_arc3= NULL;
+ui_Image6= NULL;
 ui_Button3= NULL;
-ui_Label5= NULL;
 ui_Container2= NULL;
 ui_Container3= NULL;
 ui_Label7= NULL;
