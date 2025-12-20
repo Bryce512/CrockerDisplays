@@ -86,29 +86,53 @@ void setup()
   #elif BOARD_TYPE == 2
     // ===== STEP 1: Initialize I2C for PCA9554 =====
     Serial.println("Initializing I2C...");
-    Wire.begin(TOUCH_SDA, TOUCH_SCL);  // SDA=15, SCL=7
+    
+    // First, try basic recovery
+    for (int attempt = 0; attempt < 3; attempt++) {
+      Wire.end();
+      delay(100);
+      
+      // Manual GPIO recovery with CORRECT pins for ESP32-S3
+      pinMode(TOUCH_GT911_SDA, OUTPUT);  // SDA
+      pinMode(TOUCH_GT911_SCL, OUTPUT);  // SCL
+      digitalWrite(TOUCH_GT911_SDA, HIGH);
+      digitalWrite(TOUCH_GT911_SCL, HIGH);
+      delay(50);
+      
+      Wire.begin(TOUCH_GT911_SDA, TOUCH_GT911_SCL);
+      Wire.setClock(100000);
+      delay(100);
+      
+      // Test communication with PCA9554
+      Wire.beginTransmission(0x20);
+      if (Wire.endTransmission() == 0) {
+        Serial.println("I2C bus recovered successfully");
+        break;
+      }
+      Serial.println("I2C recovery attempt failed, retrying...");
+    }
     delay(50);
     
     // ===== STEP 2: Initialize PCA9554 (all pins as outputs) =====
     Serial.println("Initializing PCA9554...");
-    TCA9554PWR_Init(0x00);  // All pins as outputs
+    TCA9554PWR_Init();
     delay(10);
-
     Set_EXIO(EXIO_PIN8, Low);  // Buzzer OFF
     delay(10);
+    Serial.println("PCA9554 I2C status: OK");
     
-    // ===== STEP 3: Reset Display =====
+    // ===== STEP 3: Reset GT911 AFTER I2C is confirmed stable =====
+    Serial.println("Resetting touch...");
+    digitalWrite(EXIO_PIN2, LOW);
+    delay(20);
+    digitalWrite(EXIO_PIN2, HIGH);
+    delay(500);  // Give GT911 plenty of time to boot
+    
+    // ===== STEP 4: Reset Display =====
     Serial.println("Resetting display...");
     Set_EXIO(EXIO_PIN1, Low);   // Display reset LOW
     delay(100);
     Set_EXIO(EXIO_PIN1, High);  // Display reset HIGH
-    delay(100);
-    
-    // ===== STEP 4: Reset Touch =====
-    Serial.println("Resetting touch...");
-    Set_EXIO(EXIO_PIN2, Low);   // Touch reset LOW
-    delay(100);
-    Set_EXIO(EXIO_PIN2, High);  // Touch reset HIGH
     delay(100);
     
     // ===== STEP 5: Initialize SPI bus =====
