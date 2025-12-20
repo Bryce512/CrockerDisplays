@@ -150,7 +150,7 @@ lv_obj_set_height( ui_Label22, LV_SIZE_CONTENT);   /// -5
 lv_obj_set_x( ui_Label22, -152 );
 lv_obj_set_y( ui_Label22, -6 );
 lv_obj_set_align( ui_Label22, LV_ALIGN_CENTER );
-lv_label_set_text(ui_Label22,"Vibration");
+lv_label_set_text(ui_Label22,"Alarm");
 ui_object_set_themeable_style_property(ui_Label22, LV_PART_MAIN| LV_STATE_DEFAULT, LV_STYLE_TEXT_COLOR, _ui_theme_color_white);
 ui_object_set_themeable_style_property(ui_Label22, LV_PART_MAIN| LV_STATE_DEFAULT, LV_STYLE_TEXT_OPA, _ui_theme_alpha_white);
 lv_obj_set_style_text_font(ui_Label22, &lv_font_montserrat_16, LV_PART_MAIN| LV_STATE_DEFAULT);
