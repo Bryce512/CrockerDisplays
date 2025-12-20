@@ -39,6 +39,7 @@ extern lv_obj_t *ui____initial_actions0;
 
 // IMAGES AND IMAGE SETS
 LV_IMG_DECLARE( ui_img_backpacks_png);   // assets/backPacks.png
+LV_IMG_DECLARE( ui_img_rightarrow2_png);   // assets/rightArrow2.png
 LV_IMG_DECLARE( ui_img_cog_png);   // assets/cog.png
 
 // UI INIT

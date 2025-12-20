@@ -127,8 +127,8 @@
   // PCLK frequency for 2.8" round
   #define TFT_PCLK_FREQ_MHZ 16
 
-#else
-  #error "Invalid BOARD_TYPE. Use 1 for 4\" square or 2 for 2.8\" round"
-#endif
+// #else
+//   #error "Invalid BOARD_TYPE. Use 1 for 4\" square or 2 for 2.8\" round"
+// #endif
 
-// #endif // BOARD_PINS_H
+#endif // BOARD_PINS_H
