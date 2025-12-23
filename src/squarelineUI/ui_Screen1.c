@@ -6,7 +6,20 @@
 #include "ui.h"
 
 lv_obj_t *uic_Arc3;
-lv_obj_t *ui_Screen1 = NULL;lv_obj_t *ui_Image1 = NULL;lv_obj_t *ui_textBackground = NULL;lv_obj_t *ui_eventOverlay = NULL;lv_obj_t *ui_timer_arc = NULL;lv_obj_t *ui_Image5 = NULL;lv_obj_t *ui_pageChangeButton = NULL;lv_obj_t *ui_Container5 = NULL;lv_obj_t *ui_timeLabel = NULL;lv_obj_t *ui_eventLabel = NULL;lv_obj_t *ui_Container14 = NULL;lv_obj_t *ui_batteryBar3 = NULL;lv_obj_t *ui_batteryPercent3 = NULL;
+lv_obj_t *ui_Screen1 = NULL;
+lv_obj_t *ui_Image1 = NULL;
+lv_obj_t *ui_textBackground = NULL;
+lv_obj_t *ui_eventOverlay = NULL;
+lv_obj_t *ui_timer_arc = NULL;
+lv_obj_t *ui_Image5 = NULL;
+lv_obj_t *ui_pageChangeButton = NULL;
+lv_obj_t *ui_Container5 = NULL;
+lv_obj_t *ui_timeLabel = NULL;
+lv_obj_t *ui_eventLabel = NULL;
+lv_obj_t *ui_Container14 = NULL;
+lv_obj_t *ui_batteryBar3 = NULL;
+lv_obj_t *ui_batteryPercent3 = NULL;
+
 // event funtions
 void ui_event_pageChangeButton( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);
@@ -75,7 +88,7 @@ ui_timer_arc = lv_arc_create(ui_Screen1);
 lv_obj_set_width( ui_timer_arc, 480);
 lv_obj_set_height( ui_timer_arc, 480);
 lv_obj_set_align( ui_timer_arc, LV_ALIGN_CENTER );
-lv_obj_add_flag( ui_timer_arc, LV_OBJ_FLAG_CLICKABLE );    /// Make it touchable
+lv_obj_clear_flag( ui_timer_arc, LV_OBJ_FLAG_CLICKABLE );    /// Make it touchable
 lv_arc_set_value(ui_timer_arc, 90);
 lv_arc_set_bg_angles(ui_timer_arc,0,360);
 lv_arc_set_mode(ui_timer_arc, LV_ARC_MODE_REVERSE);

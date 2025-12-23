@@ -1,4 +1,4 @@
-#include "display_state.h"
+#include "display_helpers.h"
 #include "squarelineUI/ui.h"
 #include "board_pins.h"
 #include <Arduino.h>
@@ -123,6 +123,7 @@ void render_display_state() {
     update_brightness_ui();
     update_text_ui();
     update_image_ui();
+    
 }
 
 void force_update_ui() {

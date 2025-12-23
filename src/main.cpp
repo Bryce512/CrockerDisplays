@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "board_pins.h"
 #include "board_configs.h"
-#include "display_state.h"
+#include "display_helpers.h"
 #include "ui_callbacks.h"
 #include "timer_functions.h"
 #include "alarm.h"
@@ -9,6 +9,8 @@
 #include "persistent_storage.h"
 #include "hardware_init.h"
 #include "system_init.h"
+#include "logic_fsm.h"
+#include "ui_fsm.h"
 
 #define GFX_BL BL_PIN
 
@@ -22,6 +24,10 @@ void setup()
   
   // Initialize system state (storage, brightness, alarm, battery, timer)
   system_state_init();
+
+  // Initialize the device state machine
+  logic_fsm_init();
+  ui_fsm_init();
   
   Serial.println("Setup complete!");
 }

@@ -1,7 +1,7 @@
 #ifndef TIMER_FUNCTIONS_H
 #define TIMER_FUNCTIONS_H
 
-#include "display_state.h"
+#include "display_helpers.h"
 #include <Arduino.h>
 #include <time.h>
 

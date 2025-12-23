@@ -1,11 +1,13 @@
 #include "system_init.h"
 #include "persistent_storage.h"
-#include "display_state.h"
+#include "display_helpers.h"
 #include "battery_management.h"
 #include "alarm.h"
 #include "timer_functions.h"
 #include "ui_callbacks.h"
 #include "squarelineUI/ui.h"
+#include "JSON_writer.h"
+#include "JSON_reader.h"
 #include <Arduino.h>
 
 void system_state_init() {
@@ -45,9 +47,31 @@ void system_state_init() {
     
     // ===== UI CALLBACKS =====
     setup_ui_callbacks();
+
+    // ===== TEST =====
+
+    // 24hr time 1030 = 10:30am 2115 = 9:15pm, time in seconds, event name, image path on the sd card
     
-    // ===== TIMER =====
-    start_timer(20 * 1000);  // 20 seconds for testing (change to 5*60*1000 for 5 minutes)
+    writeConfig wcfg{1030, 30, "Breakfast", "/doc/file/img"};
+
+    writeJSON(wcfg); 
+
     
-    Serial.println("System state initialization complete!");
+    readConfig rcfg;
+
+    if (readJSON(rcfg)) {
+        Serial.print("Start: ");
+        Serial.println(rcfg.start);
+
+        Serial.print("Duration: ");
+        Serial.println(rcfg.duration);
+
+        Serial.print("Label: ");
+        Serial.println(rcfg.label);
+
+        Serial.print("Path: ");
+        Serial.println(rcfg.path);
+    } else {
+        Serial.println("Failed to read config");
+    }
 }

@@ -7,14 +7,14 @@ TimerState timer = {0, 0, false};
 
 // ============ TIMER IMPLEMENTATION ============
 
-void start_timer(uint32_t duration_ms) {
+void start_timer(uint32_t duration) {
     timer.start_time = millis();
-    timer.duration = duration_ms;
+    timer.duration = duration * 1000;
     timer.active = true;
     
     update_event_text("Timer Running");
     Serial.print("Timer started: ");
-    Serial.print(duration_ms / 1000);
+    Serial.print(duration);
     Serial.println(" seconds");
 }
 

@@ -7,6 +7,7 @@
 #include <Wire.h>
 #include <Arduino.h>
 #include "squarelineUI/ui.h"
+#include "SD_MMC.h"
 
 Arduino_ESP32SPI* bus = NULL;
 Arduino_RGB_Display* gfx = NULL;
@@ -191,5 +192,14 @@ void hardware_init() {
   
   ui_init();
   lv_scr_load(ui_Screen1);
+
+  // ===== STEP 14: Initialize SD Card =====
+  Serial.println("Initializing SD Card...");
+  SD_MMC.setPins(/*clk=*/2, /*cmd=*/1, /*d0=*/42, /*d1=*/-1, /*d2=*/-1, /*d3=*/-1);
+  if (!SD_MMC.begin("/sdcard", /*mode1bit=*/true, /*format_if_mount_failed=*/false)) {
+    Serial.println("SD_MMC mount failed");
+  } else {
+    Serial.println("SD_MMC mounted");
+  }
 }
 

@@ -5,7 +5,24 @@
 
 #include "ui.h"
 
-lv_obj_t *ui_Screen3 = NULL;lv_obj_t *ui_Bar1 = NULL;lv_obj_t *ui_Arc2 = NULL;lv_obj_t *ui_Panel6 = NULL;lv_obj_t *ui_Label20 = NULL;lv_obj_t *ui_Button5 = NULL;lv_obj_t *ui_Container17 = NULL;lv_obj_t *ui_Container12 = NULL;lv_obj_t *ui_Container10 = NULL;lv_obj_t *ui_Label16 = NULL;lv_obj_t *ui_Label22 = NULL;lv_obj_t *ui_Container11 = NULL;lv_obj_t *ui_Slider1 = NULL;lv_obj_t *ui_Switch1 = NULL;lv_obj_t *ui_Container13 = NULL;lv_obj_t *ui_batteryBar2 = NULL;lv_obj_t *ui_batteryPercent2 = NULL;
+lv_obj_t *ui_Screen3 = NULL;
+lv_obj_t *ui_Bar1 = NULL;
+lv_obj_t *ui_Arc2 = NULL;
+lv_obj_t *ui_Panel6 = NULL;
+lv_obj_t *ui_Label20 = NULL;
+lv_obj_t *ui_Button5 = NULL;
+lv_obj_t *ui_Container17 = NULL;
+lv_obj_t *ui_Container12 = NULL;
+lv_obj_t *ui_Container10 = NULL;
+lv_obj_t *ui_Label16 = NULL;
+lv_obj_t *ui_Label22 = NULL;
+lv_obj_t *ui_Container11 = NULL;
+lv_obj_t *ui_Slider1 = NULL;
+lv_obj_t *ui_Switch1 = NULL;
+lv_obj_t *ui_Container13 = NULL;
+lv_obj_t *ui_batteryBar2 = NULL;
+lv_obj_t *ui_batteryPercent2 = NULL;
+
 // event funtions
 void ui_event_Button5( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);
