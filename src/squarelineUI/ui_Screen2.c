@@ -11,7 +11,7 @@ void ui_event_Button3( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);
 
 if ( event_code == LV_EVENT_RELEASED) {
-      _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_FADE_OUT, 100, 0, &ui_Screen1_screen_init);
+      _ui_screen_change( &ui_Screen1, LV_SCR_LOAD_ANIM_NONE, 100, 0, &ui_Screen1_screen_init);
 }
 }
 
@@ -19,7 +19,7 @@ void ui_event_Button4( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);
 
 if ( event_code == LV_EVENT_RELEASED) {
-      _ui_screen_change( &ui_Screen3, LV_SCR_LOAD_ANIM_FADE_ON, 100, 0, &ui_Screen3_screen_init);
+      _ui_screen_change( &ui_Screen3, LV_SCR_LOAD_ANIM_NONE, 100, 0, &ui_Screen3_screen_init);
 }
 }
 

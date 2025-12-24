@@ -5,6 +5,8 @@
 #include <cctype>
 #include <cstring>
 
+//static bool parseEvents(const char* buf, readConfig* out_events, size_t max_events, size_t& out_count);
+
 static void skip_separators(const char*& p)
 {
     while (*p && (isspace((unsigned char)*p) || *p == ',')) {
@@ -84,9 +86,77 @@ static bool parseConfig(const char* buf, readConfig& cfg)
     return ok1 && ok2 && ok3 && ok4;
 }
 
-
-bool readJSON(readConfig& cfg)
+static bool parseEvents(const char* buf, readConfig* out_events, size_t max_events, size_t& out_count)
 {
+    out_count = 0;
+    const char* p = strstr(buf, "\"events\"");
+    if (!p) return false;
+
+    p = strchr(p, '[');
+    if (!p) return false;
+    p++;
+
+    while (*p && out_count < max_events) {
+        while (*p && *p != '{' && *p != ']') p++;
+        if (*p == ']') break;
+        if (*p != '{') break;
+
+        const char* obj_start = p;
+        int depth = 0;
+        while (*p) {
+            if (*p == '{') depth++;
+            else if (*p == '}') {
+                depth--;
+                if (depth == 0) {
+                    const char* obj_end = p;
+                    char tmp[256];
+                    size_t len = (size_t)(obj_end - obj_start + 1);
+                    if (len >= sizeof(tmp)) len = sizeof(tmp) - 1;
+                    memcpy(tmp, obj_start, len);
+                    tmp[len] = '\0';
+
+                    readConfig cfg;
+                    if (parseConfig(tmp, cfg)) {
+                        out_events[out_count++] = cfg;
+                    }
+                    p++;
+                    break;
+                }
+            }
+            p++;
+        }
+        if (depth != 0) break;
+    }
+
+    return out_count > 0;
+}
+
+
+// bool readJSON(readConfig& cfg)
+// {
+//     if (SD_MMC.cardType() == CARD_NONE) {
+//         Serial.println("SD_MMC not mounted");
+//         return false;
+//     }
+
+//     File f = SD_MMC.open("/duration.json", FILE_READ);
+//     if (!f) {
+//         Serial.println("Failed to open duration.json");
+//         return false;
+//     }
+
+//     char buf[2048];
+//     size_t n = f.readBytes(buf, sizeof(buf) - 1);
+//     buf[n] = '\0';
+//     f.close();
+
+//     size_t count = 0;
+//     return parseEvents(buf, &cfg, 1, count);
+// }
+
+bool readJSONQueue(readConfig* out_events, size_t max_events, size_t& out_count)
+{
+    out_count = 0;
     if (SD_MMC.cardType() == CARD_NONE) {
         Serial.println("SD_MMC not mounted");
         return false;
@@ -98,10 +168,10 @@ bool readJSON(readConfig& cfg)
         return false;
     }
 
-    char buf[256];
+    char buf[4096];
     size_t n = f.readBytes(buf, sizeof(buf) - 1);
     buf[n] = '\0';
     f.close();
 
-    return parseConfig(buf, cfg);
+    return parseEvents(buf, out_events, max_events, out_count);
 }

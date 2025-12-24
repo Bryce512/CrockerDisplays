@@ -19,7 +19,7 @@ static uint8_t buf1[480 * 480 / 10 * BYTE_PER_PIXEL];
 #define TFT_HOR_RES   TFT_WIDTH
 #define TFT_VER_RES   TFT_HEIGHT
 #define DRAW_BUF_SIZE (TFT_HOR_RES * TFT_VER_RES / 10 * (LV_COLOR_DEPTH / 8))
-uint32_t draw_buf[DRAW_BUF_SIZE / 4];
+uint32_t draw_buf[DRAW_BUF_SIZE / 2];
 
 // ============ LVGL CALLBACKS ============
 

@@ -1,5 +1,5 @@
 #include "ui_callbacks.h"
-#include "display_state.h"
+#include "display_helpers.h"
 #include "squarelineUI/ui.h"
 #include "alarm.h"
 #include "persistent_storage.h"

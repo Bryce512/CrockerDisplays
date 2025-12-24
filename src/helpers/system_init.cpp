@@ -7,7 +7,6 @@
 #include "ui_callbacks.h"
 #include "squarelineUI/ui.h"
 #include "JSON_writer.h"
-#include "JSON_reader.h"
 #include <Arduino.h>
 
 void system_state_init() {
@@ -52,26 +51,7 @@ void system_state_init() {
 
     // 24hr time 1030 = 10:30am 2115 = 9:15pm, time in seconds, event name, image path on the sd card
     
-    writeConfig wcfg{1030, 30, "Breakfast", "/doc/file/img"};
+//     writeConfig wcfg{1030, 30, "Breakfast", "/doc/file/img"};
 
-    writeJSON(wcfg); 
-
-    
-    readConfig rcfg;
-
-    if (readJSON(rcfg)) {
-        Serial.print("Start: ");
-        Serial.println(rcfg.start);
-
-        Serial.print("Duration: ");
-        Serial.println(rcfg.duration);
-
-        Serial.print("Label: ");
-        Serial.println(rcfg.label);
-
-        Serial.print("Path: ");
-        Serial.println(rcfg.path);
-    } else {
-        Serial.println("Failed to read config");
-    }
+//     writeJSON(wcfg); 
 }

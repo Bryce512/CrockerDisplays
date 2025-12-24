@@ -12,7 +12,6 @@ void start_timer(uint32_t duration) {
     timer.duration = duration * 1000;
     timer.active = true;
     
-    update_event_text("Timer Running");
     Serial.print("Timer started: ");
     Serial.print(duration);
     Serial.println(" seconds");
@@ -27,8 +26,7 @@ void update_timer_display() {
         // Timer finished
         timer.active = false;
         update_timer(timer.duration, timer.duration);  // Arc at 100%
-        trigger_alarm();  // Trigger the alarm
-        update_event_text("Timer Complete!");
+        trigger_alarm();
         Serial.println("Timer finished!");
         return;
     }
@@ -54,4 +52,9 @@ void update_current_time() {
     sprintf(time_str, "%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min);
     
     update_time_text(time_str);
+}
+
+// Gettter function to determine if the timer is active
+bool _is_timer_active() {
+    return timer.active;
 }

@@ -100,3 +100,7 @@ void stop_alarm() {
     alarm_state.pattern_cycle = 0;
     Serial.println("Alarm stopped!");
 }
+
+bool _is_alarm_active() {
+    return alarm_state.active;
+}

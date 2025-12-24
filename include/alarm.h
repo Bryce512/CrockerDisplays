@@ -43,4 +43,6 @@ void update_alarm();
  */
 void stop_alarm();
 
+bool _is_alarm_active();
+
 #endif // ALARM_H

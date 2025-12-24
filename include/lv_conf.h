@@ -70,6 +70,10 @@
         #undef LV_MEM_POOL_INCLUDE
         #undef LV_MEM_POOL_ALLOC
     #endif
+
+    // /*Allocate the LVGL heap from PSRAM when available*/
+    // #define LV_MEM_POOL_INCLUDE <esp_heap_caps.h>
+    // #define LV_MEM_POOL_ALLOC(size) heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)
 #endif  /*LV_USE_STDLIB_MALLOC == LV_STDLIB_BUILTIN*/
 
 /*====================

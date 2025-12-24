@@ -81,7 +81,11 @@ static void update_timer_ui() {
     uint16_t arc_value = ((display_state.timer_max_ms - display_state.timer_ms) * 100) / display_state.timer_max_ms;
     arc_value = (arc_value > 100) ? 100 : arc_value;
     
+    if (lv_scr_act() == ui_Screen1) {
     lv_arc_set_value(ui_timer_arc, arc_value);
+    } else if (lv_scr_act() == ui_Screen2) {
+    lv_arc_set_value(ui_timer_arc3, arc_value);
+    }
 }
 
 static void update_brightness_ui() {

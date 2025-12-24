@@ -3,14 +3,13 @@
 #include "board_configs.h"
 #include "display_helpers.h"
 #include "ui_callbacks.h"
-#include "timer_functions.h"
-#include "alarm.h"
 #include "battery_management.h"
 #include "persistent_storage.h"
 #include "hardware_init.h"
 #include "system_init.h"
+#include "alarm.h"
 #include "logic_fsm.h"
-#include "ui_fsm.h"
+//#include "ui_fsm.h"
 
 #define GFX_BL BL_PIN
 
@@ -27,22 +26,21 @@ void setup()
 
   // Initialize the device state machine
   logic_fsm_init();
-  ui_fsm_init();
   
   Serial.println("Setup complete!");
 }
 
 void loop()
 {  
-    // Update alarm (beeping pattern)
-    update_alarm();
-    
-    // Update timer display
-    update_timer_display();
-    
-    // Update battery display
+    // Update battery display. Screen 3 is dynamic, screen 1 is not
     update_battery_display();
+
+    // Logic tick function, controls the timers and the alarms
+    logic_fsm_tick();
     
+    // Updates the alarm
+    update_alarm();
+
     // Render all display state changes
     render_display_state();
     
