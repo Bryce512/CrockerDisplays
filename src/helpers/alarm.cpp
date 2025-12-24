@@ -14,7 +14,7 @@ AlarmState alarm_state = {
 
 // ============ TIMING CONSTANTS ============
 #define BEEP_DURATION_MS 100       // How long each beep lasts (75ms faster beeps)
-#define PAUSE_BETWEEN_BEEPS_MS 50 // Pause between individual beeps within a set
+#define PAUSE_BETWEEN_BEEPS_MS 20 // Pause between individual beeps within a set
 #define PAUSE_BETWEEN_PATTERNS_MS 500 // Pause between 4-beep patterns (500ms between sets)
 #define TOTAL_BEEPS 16            // Total number of beeps (4 beeps, pause, 4 beeps, pause = 1 cycle)
 
