@@ -111,7 +111,8 @@ static void update_image_ui() {
     
     // If path is empty, use default
     if (strlen(display_state.bg_image_path) == 0) {
-        lv_img_set_src(ui_Image1, &ui_img_backpacks_png);
+        // Image moved to SD card - use BLE to transfer
+        // lv_img_set_src(ui_Image1, "/lvgl_images/backpacks.bin");
     } else {
         // Load from SD card path
         lv_img_set_src(ui_Image1, display_state.bg_image_path);

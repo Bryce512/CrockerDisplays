@@ -201,5 +201,8 @@ void hardware_init() {
   } else {
     Serial.println("SD_MMC mounted");
   }
+
+  // ===== STEP 15: Initialize BLE Service =====
+  initBLEService();
 }
 

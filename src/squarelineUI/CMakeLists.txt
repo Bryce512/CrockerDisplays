@@ -5,9 +5,6 @@ SET(SOURCES ui_Screen1.c
     ui_themes.cpp
     ui.c
     ui_comp_hook.c
-    ui_helpers.c
-    ui_img_backpacks_png.c
-    ui_img_rightarrow2_png.c
-    ui_img_cog_png.c)
+    ui_helpers.c)
 
 add_library(ui ${SOURCES})

@@ -100,7 +100,7 @@ lv_obj_set_style_bg_color(ui_timer_arc3, lv_color_hex(0xFFFFFF), LV_PART_KNOB | 
 lv_obj_set_style_bg_opa(ui_timer_arc3, 0, LV_PART_KNOB| LV_STATE_DEFAULT);
 
 ui_Image6 = lv_image_create(ui_Screen2);
-lv_image_set_src(ui_Image6, &ui_img_rightarrow2_png);
+// lv_image_set_src(ui_Image6, &ui_img_rightarrow2_png);  // Image moved to SD card
 lv_obj_set_width( ui_Image6, LV_SIZE_CONTENT);  /// 251
 lv_obj_set_height( ui_Image6, LV_SIZE_CONTENT);   /// 200
 lv_obj_set_x( ui_Image6, -3 );
@@ -359,7 +359,7 @@ lv_obj_set_style_text_opa(ui_Label8, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_text_font(ui_Label8, &lv_font_montserrat_32, LV_PART_MAIN| LV_STATE_DEFAULT);
 
 ui_Image9 = lv_image_create(ui_Screen2);
-lv_image_set_src(ui_Image9, &ui_img_cog_png);
+// lv_image_set_src(ui_Image9, &ui_img_cog_png);  // Image moved to SD card
 lv_obj_set_width( ui_Image9, LV_SIZE_CONTENT);  /// 251
 lv_obj_set_height( ui_Image9, LV_SIZE_CONTENT);   /// 201
 lv_obj_set_x( ui_Image9, 0 );

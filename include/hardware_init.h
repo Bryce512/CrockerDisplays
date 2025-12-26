@@ -9,5 +9,6 @@ extern Arduino_RGB_Display* gfx;
 extern lv_display_t *display;
 
 void hardware_init();
+void initBLEService();
 
 #endif
