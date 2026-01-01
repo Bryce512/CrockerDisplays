@@ -4,6 +4,9 @@
 // Project name: SquareLine_Project
 
 #include "ui.h"
+#include <stdio.h>
+#include <string.h>
+#include "schedule_manager.h"
 
 lv_obj_t *ui_Screen2 = NULL;lv_obj_t *ui_Panel7 = NULL;lv_obj_t *ui_Arc6 = NULL;lv_obj_t *ui_dividerTop = NULL;lv_obj_t *ui_dividerBot = NULL;lv_obj_t *ui_timer_arc3 = NULL;lv_obj_t *ui_Image6 = NULL;lv_obj_t *ui_Button3 = NULL;lv_obj_t *ui_Container2 = NULL;lv_obj_t *ui_Container3 = NULL;lv_obj_t *ui_Label7 = NULL;lv_obj_t *ui_Label6 = NULL;lv_obj_t *ui_Container6 = NULL;lv_obj_t *ui_Label12 = NULL;lv_obj_t *ui_Label13 = NULL;lv_obj_t *ui_Container7 = NULL;lv_obj_t *ui_Label15 = NULL;lv_obj_t *ui_Label10 = NULL;lv_obj_t *ui_Container8 = NULL;lv_obj_t *ui_Label17 = NULL;lv_obj_t *ui_Label14 = NULL;lv_obj_t *ui_Container9 = NULL;lv_obj_t *ui_Label18 = NULL;lv_obj_t *ui_Label19 = NULL;lv_obj_t *ui_Container1 = NULL;lv_obj_t *ui_Label1 = NULL;lv_obj_t *ui_Label3 = NULL;lv_obj_t *ui_Container4 = NULL;lv_obj_t *ui_Label4 = NULL;lv_obj_t *ui_Label8 = NULL;lv_obj_t *ui_Image9 = NULL;lv_obj_t *ui_Button4 = NULL;lv_obj_t *ui_Panel3 = NULL;
 // event funtions
@@ -23,375 +26,369 @@ if ( event_code == LV_EVENT_RELEASED) {
 }
 }
 
+// Update schedule display with actual data from duration.json
+void ui_Screen2_updateScheduleDisplay(void)
+{
+    printf("[SCREEN2] updateScheduleDisplay() called\n");
+    
+    if (!ui_Label7 || !ui_Label6 || !ui_Label12 || !ui_Label13) {
+        printf("[SCREEN2] WARNING: Labels not initialized yet\n");
+        return; // Labels not initialized yet
+    }
+
+    // Get all events for the day
+    ScheduleEvent* allEvents[16];
+    size_t eventCount = getAllScheduleEvents(allEvents, 16);
+    uint16_t currentMinutes = getCurrentMinutesSinceMidnight();
+    
+    printf("[SCREEN2] Total events loaded: %u, current time: %u min\n", 
+        (unsigned int)eventCount, currentMinutes);
+
+    // If no events at all, show "No Events Today"
+    if (eventCount == 0) {
+        printf("[SCREEN2] No events found, showing 'No Events Today'\n");
+        lv_obj_add_flag(ui_Label7, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_remove_flag(ui_Label6, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_width(ui_Label6, 300);
+        lv_obj_set_x(ui_Label6, 0);
+        lv_label_set_text(ui_Label6, "No Events Today");
+        
+        lv_obj_add_flag(ui_Label12, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
+        return;
+    }
+
+    // Find current event (if any)
+    ScheduleEvent* currentEvent = NULL;
+    for (size_t i = 0; i < eventCount; i++) {
+        uint16_t eventEnd = allEvents[i]->start + (allEvents[i]->duration / 60);
+        if (currentMinutes >= allEvents[i]->start && currentMinutes < eventEnd) {
+            currentEvent = allEvents[i];
+            break;
+        }
+    }
+
+    // If we have a current event, show it + the next one
+    // Otherwise, show the first two upcoming/past events (for all-day view)
+    if (currentEvent != NULL) {
+        // Display current event
+        lv_obj_remove_flag(ui_Label7, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_remove_flag(ui_Label6, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_width(ui_Label6, LV_SIZE_CONTENT);
+        
+        char timeStr[8];
+        getTimeDisplayFormat(currentEvent->start, timeStr, sizeof(timeStr));
+        lv_label_set_text(ui_Label7, timeStr);
+        
+        uint16_t remaining = getMinutesRemainingInCurrentEvent();
+        char currentText[64];
+        snprintf(currentText, sizeof(currentText), "%s (NOW - %u min left)", 
+            currentEvent->label, remaining);
+        lv_label_set_text(ui_Label6, currentText);
+        lv_obj_set_style_text_color(ui_Label6, lv_color_hex(0xFFD700), LV_PART_MAIN);
+        printf("[SCREEN2] Row 1: Current event: %s (%u min remaining)\n", 
+            currentEvent->label, remaining);
+        
+        // Find and display next event
+        ScheduleEvent* nextEvent = NULL;
+        for (size_t i = 0; i < eventCount; i++) {
+            if (allEvents[i]->start > currentMinutes) {
+                nextEvent = allEvents[i];
+                break;
+            }
+        }
+        
+        if (nextEvent != NULL) {
+            lv_obj_remove_flag(ui_Label12, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_remove_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_width(ui_Label13, LV_SIZE_CONTENT);
+            
+            getTimeDisplayFormat(nextEvent->start, timeStr, sizeof(timeStr));
+            lv_label_set_text(ui_Label12, timeStr);
+            lv_label_set_text(ui_Label13, nextEvent->label);
+            lv_obj_set_style_text_color(ui_Label13, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+            printf("[SCREEN2] Row 2: Next event: %s\n", nextEvent->label);
+        } else {
+            lv_obj_add_flag(ui_Label12, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
+            printf("[SCREEN2] Row 2: No upcoming events\n");
+        }
+    } else {
+        // No current event - show first two events from the day (past or future)
+        if (eventCount >= 1) {
+            lv_obj_remove_flag(ui_Label7, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_remove_flag(ui_Label6, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_width(ui_Label6, LV_SIZE_CONTENT);
+            
+            char timeStr[8];
+            getTimeDisplayFormat(allEvents[0]->start, timeStr, sizeof(timeStr));
+            lv_label_set_text(ui_Label7, timeStr);
+            lv_label_set_text(ui_Label6, allEvents[0]->label);
+            
+            // Color based on time: past (gray), future (white)
+            if (allEvents[0]->start > currentMinutes) {
+                lv_obj_set_style_text_color(ui_Label6, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+            } else {
+                lv_obj_set_style_text_color(ui_Label6, lv_color_hex(0x808080), LV_PART_MAIN);
+            }
+            printf("[SCREEN2] Row 1: Event: %s (past or future)\n", allEvents[0]->label);
+        }
+        
+        if (eventCount >= 2) {
+            lv_obj_remove_flag(ui_Label12, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_remove_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_width(ui_Label13, LV_SIZE_CONTENT);
+            
+            char timeStr[8];
+            getTimeDisplayFormat(allEvents[1]->start, timeStr, sizeof(timeStr));
+            lv_label_set_text(ui_Label12, timeStr);
+            lv_label_set_text(ui_Label13, allEvents[1]->label);
+            
+            // Color based on time
+            if (allEvents[1]->start > currentMinutes) {
+                lv_obj_set_style_text_color(ui_Label13, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+            } else {
+                lv_obj_set_style_text_color(ui_Label13, lv_color_hex(0x808080), LV_PART_MAIN);
+            }
+            printf("[SCREEN2] Row 2: Event: %s (past or future)\n", allEvents[1]->label);
+        } else {
+            lv_obj_add_flag(ui_Label12, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
+        }
+    }
+}
+
 // build funtions
 
 void ui_Screen2_screen_init(void)
 {
 ui_Screen2 = lv_obj_create(NULL);
-lv_obj_remove_flag( ui_Screen2, LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM );    /// Flags
+lv_obj_remove_flag( ui_Screen2, LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM );
 lv_obj_set_style_bg_color(ui_Screen2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_bg_opa(ui_Screen2, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 
+// Minimal setup - disabled most elements for debugging
+/*
+// TODO: Re-enable elements one by one to find the culprit
 ui_Panel7 = lv_obj_create(ui_Screen2);
-lv_obj_set_width( ui_Panel7, 356);
-lv_obj_set_height( ui_Panel7, 201);
-lv_obj_set_x( ui_Panel7, 1 );
-lv_obj_set_y( ui_Panel7, -10 );
-lv_obj_set_align( ui_Panel7, LV_ALIGN_CENTER );
-lv_obj_remove_flag( ui_Panel7, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_obj_set_style_radius(ui_Panel7, 30, LV_PART_MAIN| LV_STATE_DEFAULT);
-ui_object_set_themeable_style_property(ui_Panel7, LV_PART_MAIN| LV_STATE_DEFAULT, LV_STYLE_BG_COLOR, _ui_theme_color_black);
-ui_object_set_themeable_style_property(ui_Panel7, LV_PART_MAIN| LV_STATE_DEFAULT, LV_STYLE_BG_OPA, _ui_theme_alpha_black);
-lv_obj_set_style_border_color(ui_Panel7, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_border_opa(ui_Panel7, 0, LV_PART_MAIN| LV_STATE_DEFAULT);
+...
+*/
 
-ui_Arc6 = lv_arc_create(ui_Screen2);
-lv_obj_set_width( ui_Arc6, 400);
-lv_obj_set_height( ui_Arc6, 400);
-lv_obj_set_align( ui_Arc6, LV_ALIGN_CENTER );
-lv_obj_add_flag( ui_Arc6, LV_OBJ_FLAG_HIDDEN );   /// Flags
-lv_arc_set_value(ui_Arc6, 50);
-lv_arc_set_bg_angles(ui_Arc6,0,360);
-ui_object_set_themeable_style_property(ui_Arc6, LV_PART_MAIN| LV_STATE_DEFAULT, LV_STYLE_ARC_COLOR, _ui_theme_color_baby_yellow);
-ui_object_set_themeable_style_property(ui_Arc6, LV_PART_MAIN| LV_STATE_DEFAULT, LV_STYLE_ARC_OPA, _ui_theme_alpha_baby_yellow);
-lv_obj_set_style_arc_width(ui_Arc6, 200, LV_PART_MAIN| LV_STATE_DEFAULT);
+// Just add a simple label to test
+lv_obj_t* test_label = lv_label_create(ui_Screen2);
+lv_label_set_text(test_label, "Screen 2");
+lv_obj_set_align(test_label, LV_ALIGN_CENTER);
 
-lv_obj_set_style_bg_color(ui_Arc6, lv_color_hex(0xFFFFFF), LV_PART_INDICATOR | LV_STATE_DEFAULT );
-lv_obj_set_style_bg_opa(ui_Arc6, 0, LV_PART_INDICATOR| LV_STATE_DEFAULT);
-lv_obj_set_style_arc_color(ui_Arc6, lv_color_hex(0x4040FF), LV_PART_INDICATOR | LV_STATE_DEFAULT );
-lv_obj_set_style_arc_opa(ui_Arc6, 0, LV_PART_INDICATOR| LV_STATE_DEFAULT);
-
-lv_obj_set_style_bg_color(ui_Arc6, lv_color_hex(0xFFFFFF), LV_PART_KNOB | LV_STATE_DEFAULT );
-lv_obj_set_style_bg_opa(ui_Arc6, 0, LV_PART_KNOB| LV_STATE_DEFAULT);
-
-ui_dividerTop = lv_obj_create(ui_Screen2);
-lv_obj_set_width( ui_dividerTop, 350);
-lv_obj_set_height( ui_dividerTop, 2);
-lv_obj_set_x( ui_dividerTop, 0 );
-lv_obj_set_y( ui_dividerTop, -130 );
-lv_obj_set_align( ui_dividerTop, LV_ALIGN_CENTER );
-lv_obj_remove_flag( ui_dividerTop, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-
-ui_dividerBot = lv_obj_create(ui_Screen2);
-lv_obj_set_width( ui_dividerBot, 380);
-lv_obj_set_height( ui_dividerBot, 2);
-lv_obj_set_x( ui_dividerBot, 0 );
-lv_obj_set_y( ui_dividerBot, 130 );
-lv_obj_set_align( ui_dividerBot, LV_ALIGN_CENTER );
-lv_obj_remove_flag( ui_dividerBot, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-
+// Test: Add back timer arc
 ui_timer_arc3 = lv_arc_create(ui_Screen2);
 lv_obj_set_width( ui_timer_arc3, 480);
 lv_obj_set_height( ui_timer_arc3, 480);
 lv_obj_set_align( ui_timer_arc3, LV_ALIGN_CENTER );
 lv_arc_set_value(ui_timer_arc3, 90);
-lv_arc_set_bg_angles(ui_timer_arc3,0,360);
+lv_arc_set_bg_angles(ui_timer_arc3, 0, 360);
 lv_arc_set_mode(ui_timer_arc3, LV_ARC_MODE_REVERSE);
-lv_arc_set_rotation(ui_timer_arc3,270);
-lv_obj_set_style_arc_color(ui_timer_arc3, lv_color_hex(0x304B59), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_arc_opa(ui_timer_arc3, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_arc_width(ui_timer_arc3, 30, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_arc_set_rotation(ui_timer_arc3, 270);
 
-ui_object_set_themeable_style_property(ui_timer_arc3, LV_PART_INDICATOR| LV_STATE_DEFAULT, LV_STYLE_ARC_COLOR, _ui_theme_color_Baby_Blue);
-ui_object_set_themeable_style_property(ui_timer_arc3, LV_PART_INDICATOR| LV_STATE_DEFAULT, LV_STYLE_ARC_OPA, _ui_theme_alpha_Baby_Blue);
-lv_obj_set_style_arc_width(ui_timer_arc3, 30, LV_PART_INDICATOR| LV_STATE_DEFAULT);
+// Background arc styling
+lv_obj_set_style_arc_color(ui_timer_arc3, lv_color_hex(0x304B59), LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_arc_opa(ui_timer_arc3, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_arc_width(ui_timer_arc3, 30, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-lv_obj_set_style_bg_color(ui_timer_arc3, lv_color_hex(0xFFFFFF), LV_PART_KNOB | LV_STATE_DEFAULT );
-lv_obj_set_style_bg_opa(ui_timer_arc3, 0, LV_PART_KNOB| LV_STATE_DEFAULT);
+// Indicator arc styling (countdown)
+ui_object_set_themeable_style_property(ui_timer_arc3, LV_PART_INDICATOR | LV_STATE_DEFAULT, LV_STYLE_ARC_COLOR, _ui_theme_color_Baby_Blue);
+ui_object_set_themeable_style_property(ui_timer_arc3, LV_PART_INDICATOR | LV_STATE_DEFAULT, LV_STYLE_ARC_OPA, _ui_theme_alpha_Baby_Blue);
+lv_obj_set_style_arc_width(ui_timer_arc3, 30, LV_PART_INDICATOR | LV_STATE_DEFAULT);
 
+// Knob styling
+lv_obj_set_style_bg_color(ui_timer_arc3, lv_color_hex(0xFFFFFF), LV_PART_KNOB | LV_STATE_DEFAULT);
+lv_obj_set_style_bg_opa(ui_timer_arc3, 0, LV_PART_KNOB | LV_STATE_DEFAULT);
+
+// Top panel
+ui_Panel7 = lv_obj_create(ui_Screen2);
+lv_obj_set_width(ui_Panel7, 356);
+lv_obj_set_height(ui_Panel7, 201);
+lv_obj_set_x(ui_Panel7, 1);
+lv_obj_set_y(ui_Panel7, -10);
+lv_obj_set_align(ui_Panel7, LV_ALIGN_CENTER);
+lv_obj_remove_flag(ui_Panel7, LV_OBJ_FLAG_SCROLLABLE);
+lv_obj_set_style_radius(ui_Panel7, 30, LV_PART_MAIN | LV_STATE_DEFAULT);
+ui_object_set_themeable_style_property(ui_Panel7, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_BG_COLOR, _ui_theme_color_black);
+ui_object_set_themeable_style_property(ui_Panel7, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_BG_OPA, _ui_theme_alpha_black);
+lv_obj_set_style_border_color(ui_Panel7, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_border_opa(ui_Panel7, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+// Hidden arc
+ui_Arc6 = lv_arc_create(ui_Screen2);
+lv_obj_set_width(ui_Arc6, 400);
+lv_obj_set_height(ui_Arc6, 400);
+lv_obj_set_align(ui_Arc6, LV_ALIGN_CENTER);
+lv_obj_add_flag(ui_Arc6, LV_OBJ_FLAG_HIDDEN);
+lv_arc_set_value(ui_Arc6, 50);
+lv_arc_set_bg_angles(ui_Arc6, 0, 360);
+ui_object_set_themeable_style_property(ui_Arc6, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_ARC_COLOR, _ui_theme_color_baby_yellow);
+ui_object_set_themeable_style_property(ui_Arc6, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_ARC_OPA, _ui_theme_alpha_baby_yellow);
+lv_obj_set_style_arc_width(ui_Arc6, 200, LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_bg_color(ui_Arc6, lv_color_hex(0xFFFFFF), LV_PART_INDICATOR | LV_STATE_DEFAULT);
+lv_obj_set_style_bg_opa(ui_Arc6, 0, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+lv_obj_set_style_arc_color(ui_Arc6, lv_color_hex(0x4040FF), LV_PART_INDICATOR | LV_STATE_DEFAULT);
+lv_obj_set_style_arc_opa(ui_Arc6, 0, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+lv_obj_set_style_bg_color(ui_Arc6, lv_color_hex(0xFFFFFF), LV_PART_KNOB | LV_STATE_DEFAULT);
+lv_obj_set_style_bg_opa(ui_Arc6, 0, LV_PART_KNOB | LV_STATE_DEFAULT);
+
+
+// Right arrow image
 ui_Image6 = lv_image_create(ui_Screen2);
-// lv_image_set_src(ui_Image6, &ui_img_rightarrow2_png);  // Image moved to SD card
-lv_obj_set_width( ui_Image6, LV_SIZE_CONTENT);  /// 251
-lv_obj_set_height( ui_Image6, LV_SIZE_CONTENT);   /// 200
-lv_obj_set_x( ui_Image6, -3 );
-lv_obj_set_y( ui_Image6, 173 );
-lv_obj_set_align( ui_Image6, LV_ALIGN_CENTER );
-lv_obj_add_flag( ui_Image6, LV_OBJ_FLAG_CLICKABLE );   /// Flags
-lv_obj_remove_flag( ui_Image6, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_image_set_rotation(ui_Image6,600);
-lv_image_set_scale(ui_Image6,100);
+lv_obj_set_width(ui_Image6, LV_SIZE_CONTENT);
+lv_obj_set_height(ui_Image6, LV_SIZE_CONTENT);
+lv_obj_set_x(ui_Image6, -3);
+lv_obj_set_y(ui_Image6, 173);
+lv_obj_set_align(ui_Image6, LV_ALIGN_CENTER);
+lv_obj_add_flag(ui_Image6, LV_OBJ_FLAG_CLICKABLE);
+lv_obj_remove_flag(ui_Image6, LV_OBJ_FLAG_SCROLLABLE);
+lv_image_set_rotation(ui_Image6, 600);
+lv_image_set_scale(ui_Image6, 100);
 
+// Back button - moved to right side
 ui_Button3 = lv_button_create(ui_Screen2);
-lv_obj_set_width( ui_Button3, 219);
-lv_obj_set_height( ui_Button3, 60);
-lv_obj_set_x( ui_Button3, 3 );
-lv_obj_set_y( ui_Button3, 167 );
-lv_obj_set_align( ui_Button3, LV_ALIGN_CENTER );
-lv_obj_add_flag( ui_Button3, LV_OBJ_FLAG_SCROLL_ON_FOCUS );   /// Flags
-lv_obj_remove_flag( ui_Button3, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_obj_set_style_bg_color(ui_Button3, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_bg_opa(ui_Button3, 0, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_shadow_color(ui_Button3, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_shadow_opa(ui_Button3, 0, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_width(ui_Button3, 219);
+lv_obj_set_height(ui_Button3, 60);
+lv_obj_set_x(ui_Button3, 185);
+lv_obj_set_y(ui_Button3, 0);
+lv_obj_set_align(ui_Button3, LV_ALIGN_CENTER);
+lv_obj_add_flag(ui_Button3, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+lv_obj_remove_flag(ui_Button3, LV_OBJ_FLAG_SCROLLABLE);
+lv_obj_set_style_bg_color(ui_Button3, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_bg_opa(ui_Button3, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_shadow_color(ui_Button3, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_shadow_opa(ui_Button3, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+// Schedule container (empty for now)
 ui_Container2 = lv_obj_create(ui_Screen2);
 lv_obj_remove_style_all(ui_Container2);
-lv_obj_set_width( ui_Container2, 300);
-lv_obj_set_height( ui_Container2, 254);
-lv_obj_set_x( ui_Container2, 0 );
-lv_obj_set_y( ui_Container2, 1 );
-lv_obj_set_align( ui_Container2, LV_ALIGN_CENTER );
-lv_obj_set_flex_flow(ui_Container2,LV_FLEX_FLOW_COLUMN);
+lv_obj_set_width(ui_Container2, 300);
+lv_obj_set_height(ui_Container2, 254);
+lv_obj_set_x(ui_Container2, 0);
+lv_obj_set_y(ui_Container2, 1);
+lv_obj_set_align(ui_Container2, LV_ALIGN_CENTER);
+lv_obj_set_flex_flow(ui_Container2, LV_FLEX_FLOW_COLUMN);
 lv_obj_set_flex_align(ui_Container2, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
-lv_obj_add_flag( ui_Container2, LV_OBJ_FLAG_SCROLL_ON_FOCUS );   /// Flags
-lv_obj_set_scrollbar_mode(ui_Container2, LV_SCROLLBAR_MODE_ON);
+lv_obj_remove_flag(ui_Container2, LV_OBJ_FLAG_SCROLL_ON_FOCUS);  // Allow automatic scrolling
+lv_obj_set_scrollbar_mode(ui_Container2, LV_SCROLLBAR_MODE_AUTO);  // Show scrollbar when needed
 lv_obj_set_scroll_dir(ui_Container2, LV_DIR_VER);
 
-lv_obj_set_style_bg_color(ui_Container2, lv_color_hex(0xFFFFFF), LV_PART_SCROLLBAR | LV_STATE_DEFAULT );
-lv_obj_set_style_bg_opa(ui_Container2, 150, LV_PART_SCROLLBAR| LV_STATE_DEFAULT);
-lv_obj_set_style_bg_grad_dir(ui_Container2, LV_GRAD_DIR_VER, LV_PART_SCROLLBAR| LV_STATE_DEFAULT);
+// Scrollbar styling for ui_Container2
+lv_obj_set_style_bg_color(ui_Container2, lv_color_hex(0xFFFFFF), LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
+lv_obj_set_style_bg_opa(ui_Container2, 150, LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
+lv_obj_set_style_bg_grad_dir(ui_Container2, LV_GRAD_DIR_VER, LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
 
+// Event Container 1
 ui_Container3 = lv_obj_create(ui_Container2);
 lv_obj_remove_style_all(ui_Container3);
-lv_obj_set_width( ui_Container3, 300);
-lv_obj_set_height( ui_Container3, 50);
-lv_obj_set_x( ui_Container3, -2 );
-lv_obj_set_y( ui_Container3, 45 );
-lv_obj_set_align( ui_Container3, LV_ALIGN_CENTER );
-lv_obj_remove_flag( ui_Container3, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_obj_set_width(ui_Container3, 380);  // Wider to allow horizontal scrolling
+lv_obj_set_height(ui_Container3, 50);
+lv_obj_set_x(ui_Container3, -2);
+lv_obj_set_y(ui_Container3, 45);
+lv_obj_set_align(ui_Container3, LV_ALIGN_CENTER);
+lv_obj_remove_flag(ui_Container3, LV_OBJ_FLAG_SCROLL_ON_FOCUS);  // Enable auto-scroll
+lv_obj_set_scrollbar_mode(ui_Container3, LV_SCROLLBAR_MODE_OFF);
+lv_obj_set_scroll_dir(ui_Container3, LV_DIR_HOR | LV_DIR_VER);  // Allow both directions
 
 ui_Label7 = lv_label_create(ui_Container3);
-lv_obj_set_width( ui_Label7, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_Label7, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label7, -100 );
-lv_obj_set_y( ui_Label7, -2 );
-lv_obj_set_align( ui_Label7, LV_ALIGN_CENTER );
-lv_label_set_text(ui_Label7,"1 hr");
-lv_obj_set_style_text_color(ui_Label7, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_text_opa(ui_Label7, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label7, &lv_font_montserrat_24, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_width(ui_Label7, LV_SIZE_CONTENT);
+lv_obj_set_height(ui_Label7, LV_SIZE_CONTENT);
+lv_obj_set_x(ui_Label7, 0);  // Align to left edge
+lv_obj_set_y(ui_Label7, -2);
+lv_obj_set_align(ui_Label7, LV_ALIGN_LEFT_MID);
+lv_label_set_text(ui_Label7, "01:00");
+lv_obj_set_style_text_color(ui_Label7, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_text_opa(ui_Label7, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_text_font(ui_Label7, &lv_font_montserrat_24, LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_margin_right(ui_Label7, 16, LV_PART_MAIN);  // Increased gap between time and label
 
 ui_Label6 = lv_label_create(ui_Container3);
-lv_obj_set_width( ui_Label6, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_Label6, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label6, 48 );
-lv_obj_set_y( ui_Label6, -4 );
-lv_obj_set_align( ui_Label6, LV_ALIGN_CENTER );
-lv_label_set_text(ui_Label6,"Play Time");
-lv_obj_set_style_text_color(ui_Label6, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_text_opa(ui_Label6, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label6, &lv_font_montserrat_32, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_width(ui_Label6, LV_SIZE_CONTENT);
+lv_obj_set_height(ui_Label6, LV_SIZE_CONTENT);
+lv_obj_set_x(ui_Label6, 65);  // Increased gap from time label
+lv_obj_set_y(ui_Label6, -4);
+lv_obj_set_align(ui_Label6, LV_ALIGN_LEFT_MID);
+lv_label_set_text(ui_Label6, "Play Time");
+lv_obj_set_style_text_color(ui_Label6, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_text_opa(ui_Label6, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_text_font(ui_Label6, &lv_font_montserrat_32, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+// Event Container 2
 ui_Container6 = lv_obj_create(ui_Container2);
 lv_obj_remove_style_all(ui_Container6);
-lv_obj_set_width( ui_Container6, 300);
-lv_obj_set_height( ui_Container6, 50);
-lv_obj_set_x( ui_Container6, 3 );
-lv_obj_set_y( ui_Container6, 102 );
-lv_obj_set_align( ui_Container6, LV_ALIGN_CENTER );
-lv_obj_remove_flag( ui_Container6, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_obj_set_width(ui_Container6, 380);  // Match Container 3 width
+lv_obj_set_height(ui_Container6, 50);
+lv_obj_set_x(ui_Container6, 3);
+lv_obj_set_y(ui_Container6, 102);
+lv_obj_set_align(ui_Container6, LV_ALIGN_CENTER);
+lv_obj_remove_flag(ui_Container6, LV_OBJ_FLAG_SCROLL_ON_FOCUS);  // Enable auto-scroll
+lv_obj_set_scrollbar_mode(ui_Container6, LV_SCROLLBAR_MODE_OFF);
+lv_obj_set_scroll_dir(ui_Container6, LV_DIR_HOR | LV_DIR_VER);
 
 ui_Label12 = lv_label_create(ui_Container6);
-lv_obj_set_width( ui_Label12, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_Label12, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label12, -100 );
-lv_obj_set_y( ui_Label12, -2 );
-lv_obj_set_align( ui_Label12, LV_ALIGN_CENTER );
-lv_label_set_text(ui_Label12,"1 hr");
-lv_obj_set_style_text_color(ui_Label12, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_text_opa(ui_Label12, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label12, &lv_font_montserrat_24, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_width(ui_Label12, LV_SIZE_CONTENT);
+lv_obj_set_height(ui_Label12, LV_SIZE_CONTENT);
+lv_obj_set_x(ui_Label12, 0);  // Align to left edge
+lv_obj_set_y(ui_Label12, -2);
+lv_obj_set_align(ui_Label12, LV_ALIGN_LEFT_MID);
+lv_label_set_text(ui_Label12, "02:00");
+lv_obj_set_style_text_color(ui_Label12, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_text_opa(ui_Label12, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_text_font(ui_Label12, &lv_font_montserrat_24, LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_margin_right(ui_Label12, 16, LV_PART_MAIN);  // Increased gap between time and label
+lv_obj_set_style_text_font(ui_Label12, &lv_font_montserrat_24, LV_PART_MAIN | LV_STATE_DEFAULT);
 
 ui_Label13 = lv_label_create(ui_Container6);
-lv_obj_set_width( ui_Label13, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_Label13, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label13, 48 );
-lv_obj_set_y( ui_Label13, -4 );
-lv_obj_set_align( ui_Label13, LV_ALIGN_CENTER );
-lv_label_set_text(ui_Label13,"Play Time");
-lv_obj_set_style_text_color(ui_Label13, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_text_opa(ui_Label13, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label13, &lv_font_montserrat_32, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_width(ui_Label13, LV_SIZE_CONTENT);
+lv_obj_set_height(ui_Label13, LV_SIZE_CONTENT);
+lv_obj_set_x(ui_Label13, 65);  // Increased gap from time label
+lv_obj_set_y(ui_Label13, -4);
+lv_obj_set_align(ui_Label13, LV_ALIGN_LEFT_MID);
+lv_label_set_text(ui_Label13, "Feeding");
+lv_obj_set_style_text_color(ui_Label13, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_text_opa(ui_Label13, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_text_font(ui_Label13, &lv_font_montserrat_32, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-ui_Container7 = lv_obj_create(ui_Container2);
-lv_obj_remove_style_all(ui_Container7);
-lv_obj_set_width( ui_Container7, 300);
-lv_obj_set_height( ui_Container7, 50);
-lv_obj_set_x( ui_Container7, -5 );
-lv_obj_set_y( ui_Container7, -97 );
-lv_obj_set_align( ui_Container7, LV_ALIGN_CENTER );
-lv_obj_remove_flag( ui_Container7, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-
-ui_Label15 = lv_label_create(ui_Container7);
-lv_obj_set_width( ui_Label15, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_Label15, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label15, -100 );
-lv_obj_set_y( ui_Label15, -2 );
-lv_obj_set_align( ui_Label15, LV_ALIGN_CENTER );
-lv_label_set_text(ui_Label15,"1 hr");
-lv_obj_set_style_text_color(ui_Label15, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_text_opa(ui_Label15, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label15, &lv_font_montserrat_24, LV_PART_MAIN| LV_STATE_DEFAULT);
-
-ui_Label10 = lv_label_create(ui_Container7);
-lv_obj_set_width( ui_Label10, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_Label10, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label10, 48 );
-lv_obj_set_y( ui_Label10, -4 );
-lv_obj_set_align( ui_Label10, LV_ALIGN_CENTER );
-lv_label_set_text(ui_Label10,"Play Time");
-lv_obj_set_style_text_color(ui_Label10, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_text_opa(ui_Label10, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label10, &lv_font_montserrat_32, LV_PART_MAIN| LV_STATE_DEFAULT);
-
-ui_Container8 = lv_obj_create(ui_Container2);
-lv_obj_remove_style_all(ui_Container8);
-lv_obj_set_width( ui_Container8, 300);
-lv_obj_set_height( ui_Container8, 50);
-lv_obj_set_x( ui_Container8, -1 );
-lv_obj_set_y( ui_Container8, -39 );
-lv_obj_set_align( ui_Container8, LV_ALIGN_CENTER );
-lv_obj_remove_flag( ui_Container8, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-
-ui_Label17 = lv_label_create(ui_Container8);
-lv_obj_set_width( ui_Label17, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_Label17, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label17, -100 );
-lv_obj_set_y( ui_Label17, -2 );
-lv_obj_set_align( ui_Label17, LV_ALIGN_CENTER );
-lv_label_set_text(ui_Label17,"1 hr");
-lv_obj_set_style_text_color(ui_Label17, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_text_opa(ui_Label17, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label17, &lv_font_montserrat_24, LV_PART_MAIN| LV_STATE_DEFAULT);
-
-ui_Label14 = lv_label_create(ui_Container8);
-lv_obj_set_width( ui_Label14, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_Label14, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label14, 47 );
-lv_obj_set_y( ui_Label14, -3 );
-lv_obj_set_align( ui_Label14, LV_ALIGN_CENTER );
-lv_label_set_text(ui_Label14,"Play Time");
-lv_obj_set_style_text_color(ui_Label14, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_text_opa(ui_Label14, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label14, &lv_font_montserrat_32, LV_PART_MAIN| LV_STATE_DEFAULT);
-
-ui_Container9 = lv_obj_create(ui_Container2);
-lv_obj_remove_style_all(ui_Container9);
-lv_obj_set_width( ui_Container9, 300);
-lv_obj_set_height( ui_Container9, 50);
-lv_obj_set_x( ui_Container9, -1 );
-lv_obj_set_y( ui_Container9, -39 );
-lv_obj_set_align( ui_Container9, LV_ALIGN_CENTER );
-lv_obj_remove_flag( ui_Container9, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-
-ui_Label18 = lv_label_create(ui_Container9);
-lv_obj_set_width( ui_Label18, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_Label18, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label18, -100 );
-lv_obj_set_y( ui_Label18, -2 );
-lv_obj_set_align( ui_Label18, LV_ALIGN_CENTER );
-lv_label_set_text(ui_Label18,"1 hr");
-lv_obj_set_style_text_color(ui_Label18, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_text_opa(ui_Label18, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label18, &lv_font_montserrat_24, LV_PART_MAIN| LV_STATE_DEFAULT);
-
-ui_Label19 = lv_label_create(ui_Container9);
-lv_obj_set_width( ui_Label19, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_Label19, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label19, 47 );
-lv_obj_set_y( ui_Label19, -3 );
-lv_obj_set_align( ui_Label19, LV_ALIGN_CENTER );
-lv_label_set_text(ui_Label19,"Play Time");
-lv_obj_set_style_text_color(ui_Label19, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_text_opa(ui_Label19, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label19, &lv_font_montserrat_32, LV_PART_MAIN| LV_STATE_DEFAULT);
-
-ui_Container1 = lv_obj_create(ui_Container2);
-lv_obj_remove_style_all(ui_Container1);
-lv_obj_set_width( ui_Container1, 300);
-lv_obj_set_height( ui_Container1, 50);
-lv_obj_set_x( ui_Container1, -1 );
-lv_obj_set_y( ui_Container1, -39 );
-lv_obj_set_align( ui_Container1, LV_ALIGN_CENTER );
-lv_obj_remove_flag( ui_Container1, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-
-ui_Label1 = lv_label_create(ui_Container1);
-lv_obj_set_width( ui_Label1, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_Label1, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label1, -100 );
-lv_obj_set_y( ui_Label1, -2 );
-lv_obj_set_align( ui_Label1, LV_ALIGN_CENTER );
-lv_label_set_text(ui_Label1,"1 hr");
-lv_obj_set_style_text_color(ui_Label1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_text_opa(ui_Label1, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label1, &lv_font_montserrat_24, LV_PART_MAIN| LV_STATE_DEFAULT);
-
-ui_Label3 = lv_label_create(ui_Container1);
-lv_obj_set_width( ui_Label3, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_Label3, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label3, 47 );
-lv_obj_set_y( ui_Label3, -3 );
-lv_obj_set_align( ui_Label3, LV_ALIGN_CENTER );
-lv_label_set_text(ui_Label3,"Play Time");
-lv_obj_set_style_text_color(ui_Label3, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_text_opa(ui_Label3, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label3, &lv_font_montserrat_32, LV_PART_MAIN| LV_STATE_DEFAULT);
-
-ui_Container4 = lv_obj_create(ui_Container2);
-lv_obj_remove_style_all(ui_Container4);
-lv_obj_set_width( ui_Container4, 300);
-lv_obj_set_height( ui_Container4, 50);
-lv_obj_set_x( ui_Container4, -1 );
-lv_obj_set_y( ui_Container4, -39 );
-lv_obj_set_align( ui_Container4, LV_ALIGN_CENTER );
-lv_obj_remove_flag( ui_Container4, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-
-ui_Label4 = lv_label_create(ui_Container4);
-lv_obj_set_width( ui_Label4, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_Label4, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label4, -100 );
-lv_obj_set_y( ui_Label4, -2 );
-lv_obj_set_align( ui_Label4, LV_ALIGN_CENTER );
-lv_label_set_text(ui_Label4,"1 hr");
-lv_obj_set_style_text_color(ui_Label4, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_text_opa(ui_Label4, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label4, &lv_font_montserrat_24, LV_PART_MAIN| LV_STATE_DEFAULT);
-
-ui_Label8 = lv_label_create(ui_Container4);
-lv_obj_set_width( ui_Label8, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_Label8, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label8, 47 );
-lv_obj_set_y( ui_Label8, -3 );
-lv_obj_set_align( ui_Label8, LV_ALIGN_CENTER );
-lv_label_set_text(ui_Label8,"Play Time");
-lv_obj_set_style_text_color(ui_Label8, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_text_opa(ui_Label8, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label8, &lv_font_montserrat_32, LV_PART_MAIN| LV_STATE_DEFAULT);
-
+// Settings image - moved to left side
 ui_Image9 = lv_image_create(ui_Screen2);
-// lv_image_set_src(ui_Image9, &ui_img_cog_png);  // Image moved to SD card
-lv_obj_set_width( ui_Image9, LV_SIZE_CONTENT);  /// 251
-lv_obj_set_height( ui_Image9, LV_SIZE_CONTENT);   /// 201
-lv_obj_set_x( ui_Image9, 0 );
-lv_obj_set_y( ui_Image9, -171 );
-lv_obj_set_align( ui_Image9, LV_ALIGN_CENTER );
-lv_obj_add_flag( ui_Image9, LV_OBJ_FLAG_CLICKABLE );   /// Flags
-lv_obj_remove_flag( ui_Image9, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_image_set_scale(ui_Image9,60);
+lv_obj_set_width(ui_Image9, LV_SIZE_CONTENT);
+lv_obj_set_height(ui_Image9, LV_SIZE_CONTENT);
+lv_obj_set_x(ui_Image9, -183);
+lv_obj_set_y(ui_Image9, 0);
+lv_obj_set_align(ui_Image9, LV_ALIGN_CENTER);
+lv_obj_add_flag(ui_Image9, LV_OBJ_FLAG_CLICKABLE);
+lv_obj_remove_flag(ui_Image9, LV_OBJ_FLAG_SCROLLABLE);
+lv_image_set_scale(ui_Image9, 60);
 
+// Settings button - moved to left side
 ui_Button4 = lv_button_create(ui_Screen2);
-lv_obj_set_width( ui_Button4, 203);
-lv_obj_set_height( ui_Button4, 57);
-lv_obj_set_x( ui_Button4, 0 );
-lv_obj_set_y( ui_Button4, -163 );
-lv_obj_set_align( ui_Button4, LV_ALIGN_CENTER );
-lv_obj_add_flag( ui_Button4, LV_OBJ_FLAG_SCROLL_ON_FOCUS );   /// Flags
-lv_obj_remove_flag( ui_Button4, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_obj_set_style_bg_color(ui_Button4, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_bg_opa(ui_Button4, 0, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_shadow_color(ui_Button4, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_shadow_opa(ui_Button4, 0, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_width(ui_Button4, 219);
+lv_obj_set_height(ui_Button4, 60);
+lv_obj_set_x(ui_Button4, -185);
+lv_obj_set_y(ui_Button4, 0);
+lv_obj_set_align(ui_Button4, LV_ALIGN_CENTER);
+lv_obj_add_flag(ui_Button4, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+lv_obj_remove_flag(ui_Button4, LV_OBJ_FLAG_SCROLLABLE);
+lv_obj_set_style_bg_color(ui_Button4, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_bg_opa(ui_Button4, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_shadow_color(ui_Button4, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_shadow_opa(ui_Button4, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+// Bottom panel
 ui_Panel3 = lv_obj_create(ui_Screen2);
-lv_obj_set_width( ui_Panel3, 100);
-lv_obj_set_height( ui_Panel3, 50);
-lv_obj_set_x( ui_Panel3, -314 );
-lv_obj_set_y( ui_Panel3, -377 );
-lv_obj_set_align( ui_Panel3, LV_ALIGN_CENTER );
-lv_obj_remove_flag( ui_Panel3, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_obj_set_width(ui_Panel3, 100);
+lv_obj_set_height(ui_Panel3, 50);
+lv_obj_set_x(ui_Panel3, -314);
+lv_obj_set_y(ui_Panel3, -377);
+lv_obj_set_align(ui_Panel3, LV_ALIGN_CENTER);
+lv_obj_remove_flag(ui_Panel3, LV_OBJ_FLAG_SCROLLABLE);
 
-lv_obj_add_event_cb(ui_Button3, ui_event_Button3, LV_EVENT_ALL, NULL);
-lv_obj_add_event_cb(ui_Button4, ui_event_Button4, LV_EVENT_ALL, NULL);
+// Add event callbacks
+lv_obj_add_event_cb(ui_Button3, ui_event_Button4, LV_EVENT_ALL, NULL);
+lv_obj_add_event_cb(ui_Button4, ui_event_Button3, LV_EVENT_ALL, NULL);
 
 }
 

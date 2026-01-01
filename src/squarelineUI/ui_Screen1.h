@@ -13,6 +13,7 @@ extern "C" {
 // SCREEN: ui_Screen1
 extern void ui_Screen1_screen_init(void);
 extern void ui_Screen1_screen_destroy(void);
+extern void ui_Screen1_updateCountdown(void);  // Update countdown to next event
 extern lv_obj_t *ui_Screen1;
 extern lv_obj_t *ui_Image1;
 extern lv_obj_t *ui_textBackground;
@@ -24,6 +25,7 @@ extern lv_obj_t *ui_pageChangeButton;
 extern lv_obj_t *ui_Container5;
 extern lv_obj_t *ui_timeLabel;
 extern lv_obj_t *ui_eventLabel;
+extern lv_obj_t *ui_currentTimeLabel;
 extern lv_obj_t *ui_Container14;
 extern lv_obj_t *ui_batteryBar3;
 extern lv_obj_t *ui_batteryPercent3;

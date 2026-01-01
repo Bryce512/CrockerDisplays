@@ -13,6 +13,7 @@ extern "C" {
 // SCREEN: ui_Screen2
 extern void ui_Screen2_screen_init(void);
 extern void ui_Screen2_screen_destroy(void);
+extern void ui_Screen2_updateScheduleDisplay(void);
 extern lv_obj_t *ui_Screen2;
 extern lv_obj_t *ui_Panel7;
 extern lv_obj_t *ui_Arc6;

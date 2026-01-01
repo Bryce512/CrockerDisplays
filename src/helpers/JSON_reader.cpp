@@ -190,15 +190,15 @@ bool readJSON(readConfig& cfg)
     return parseEvents(buf, &cfg, 1, count);
 }
 
-bool readJSONQueue(readConfig* out_events, size_t max_events, size_t& out_count)
+bool readJSONQueue(readConfig* out_events, size_t max_events, size_t* out_count)
 {
     // Initialize file if needed
     if (!initializeJSONFile()) {
-        out_count = 0;
+        *out_count = 0;
         return false;
     }
 
-    out_count = 0;
+    *out_count = 0;
     if (SD_MMC.cardType() == CARD_NONE) {
         Serial.println("SD_MMC not mounted");
         return false;
@@ -215,5 +215,5 @@ bool readJSONQueue(readConfig* out_events, size_t max_events, size_t& out_count)
     buf[n] = '\0';
     f.close();
 
-    return parseEvents(buf, out_events, max_events, out_count);
+    return parseEvents(buf, out_events, max_events, *out_count);
 }

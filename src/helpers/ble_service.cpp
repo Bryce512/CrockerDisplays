@@ -2,11 +2,13 @@
 #include "ble_file_transfer.h"
 #include "JSON_reader.h"
 #include "JSON_writer.h"
+#include "schedule_manager.h"
 #include <Arduino.h>
 #include "SD_MMC.h"
 #include <nvs_flash.h>
 #include <nvs.h>
 #include <time.h>
+#include "squarelineUI/ui.h"
 
 // Global pointers
 static BLEServer* pServer = nullptr;
@@ -346,6 +348,13 @@ void processBLEConfig() {
     if (written == jsonConfigLength) {
         updateBLEStatus(STATUS_SUCCESS, "Config saved");
         Serial.printf("[BLE CONFIG] ✓ Success: Saved %d bytes to /duration.json\n", (int)written);
+        
+        // Invalidate schedule cache so next call to updateScheduleDisplay reloads from SD card
+        invalidateScheduleCache();
+        
+        // Reload schedule from the newly saved file and update Screen 2 display
+        ui_Screen2_updateScheduleDisplay();
+        Serial.println("[BLE CONFIG] ✓ Updated Screen 2 with new schedule");
     } else {
         updateBLEStatus(STATUS_ERROR, "Write failed");
         Serial.printf("[BLE CONFIG] ✗ Error: Only wrote %d of %d bytes\n", (int)written, (int)jsonConfigLength);

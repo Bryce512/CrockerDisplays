@@ -1,0 +1,14 @@
+{
+  "events": [
+    {"start": 360, "duration": 1800, "label": "Breakfast", "path": "/sdcard/breakfast.png"},
+    {"start": 540, "duration": 3600, "label": "Play Time", "path": "/sdcard/playtime.png"},
+    {"start": 660, "duration": 1800, "label": "Lunch", "path": "/sdcard/lunch.png"},
+    {"start": 780, "duration": 2700, "label": "Feeding", "path": "/sdcard/feeding.png"},
+    {"start": 900, "duration": 3600, "label": "Nap Time", "path": "/sdcard/nap.png"},
+    {"start": 1020, "duration": 1800, "label": "Snack", "path": "/sdcard/snack.png"},
+    {"start": 1140, "duration": 2700, "label": "Quiet Time", "path": "/sdcard/quiet.png"},
+    {"start": 1260, "duration": 1800, "label": "Dinner", "path": "/sdcard/dinner.png"},
+    {"start": 1380, "duration": 1800, "label": "Bedtime", "path": "/sdcard/sleep.png"},
+    {"start": 1410, "duration": 1800, "label": "Wind Down", "path": "/sdcard/wind.png"}
+  ]
+}

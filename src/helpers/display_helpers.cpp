@@ -23,7 +23,7 @@ static void update_image_ui();
 // ============ INITIALIZATION ============
 void display_state_init() {
     strcpy(display_state.event_text, "Ready");
-    strcpy(display_state.time_text, "--:--");
+    strcpy(display_state.time_text, "00:00");
     strcpy(display_state.bg_image_path, "");
     
     render_display_state();

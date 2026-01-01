@@ -2,7 +2,8 @@
 #include "alarm.h"
 #include "timer_functions.h"
 #include "timer_event_handler.h"
-#include "JSON_reader.h"
+#include "schedule_manager.h"
+#include <Arduino.h>
 
 
 
@@ -47,13 +48,18 @@ void logic_fsm_tick()
             }
             break;
         
-        case State::end: // Plays the alarm sound until the end, checks 
-            if (_queue_index() == _queue_count()) {
-                currentState = State::init;
-                Serial.println("End -> Init");
-            } else if (!_is_alarm_active()) {
-                currentState = State::start;
-                Serial.println("End -> Start");
+        case State::end: // Plays the alarm sound until the end, then look for next event
+            if (!_is_alarm_active()) {
+                // Alarm finished, check if there's another event
+                if (timer_load_queue()) {
+                    // New event available, transition to start it
+                    currentState = State::start;
+                    Serial.println("End -> Start (Next Event)");
+                } else {
+                    // No more events, go back to init
+                    currentState = State::init;
+                    Serial.println("End -> Init (No More Events)");
+                }
             }
             break;
 
