@@ -26,6 +26,7 @@ static uint32_t millisAtSync = 0;        // What millis() was at that moment
 static bool timeIsValid = false;         // Has time been synced at least once
 static bool firstSyncSinceConnection = true;  // Track if we've had first sync
 static uint32_t lastNVSUpdateMillis = 0;  // Last time we updated NVS with current time
+static bool updateScreen2AfterTimeSync = false;  // Flag to update Screen 2 after time changes
 
 // Buffer for JSON config - deferred to main loop to avoid stack overflow
 // Dynamically allocated from heap/PSRAM to avoid DRAM limits
@@ -460,6 +461,10 @@ void syncTimeFromPhone(uint64_t unixTimestamp) {
         timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
     
     Serial.println("======================================\n");
+    
+    // Set flag to update Screen 2 display in main loop (thread-safe)
+    // This avoids calling LVGL functions from BLE callback context
+    updateScreen2AfterTimeSync = true;
 }
 
 /**
@@ -630,4 +635,16 @@ void checkAndSyncScheduleIfNeeded() {
         // Mark today as synced
         lastSyncedDay = currentDay;
     }
+}
+
+/**
+ * Check if Screen 2 needs update after time sync
+ * Called from main loop to safely update UI
+ */
+bool shouldUpdateScreen2AfterTimeSync() {
+    if (updateScreen2AfterTimeSync) {
+        updateScreen2AfterTimeSync = false;  // Clear flag
+        return true;
+    }
+    return false;
 }

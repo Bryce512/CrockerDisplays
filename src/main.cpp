@@ -68,6 +68,12 @@ void loop()
     // Process any pending BLE file transfers (must be in main loop to avoid stack overflow)
     processBLEFileData();
     
+    // Check if Screen 2 needs update after time sync (thread-safe flag from BLE callback)
+    if (shouldUpdateScreen2AfterTimeSync()) {
+        Serial.println("[MAIN] Updating Screen 2 after time sync");
+        ui_Screen2_updateScheduleDisplay();
+    }
+    
     // Check schedule every minute and log state
     static unsigned long lastScheduleLog = 0;
     if (millis() - lastScheduleLog > 60000) {

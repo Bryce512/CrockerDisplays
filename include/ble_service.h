@@ -43,5 +43,6 @@ void updateNVSTimeIfNeeded();  // Call from main loop to keep NVS time fresh
 uint64_t getEstimatedUnixTime();  // Get current time (from system clock + millis elapsed)
 bool isTimeValid();  // Check if time has been synced recently
 void checkAndSyncScheduleIfNeeded();  // Call from main loop to check for 2 AM sync
+bool shouldUpdateScreen2AfterTimeSync();  // Check if Screen 2 needs update after time change
 
 #endif
