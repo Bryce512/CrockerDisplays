@@ -247,16 +247,17 @@ void ui_Screen1_updateCountdown(void)
     // Get current and next events
     ScheduleEvent* currentEvent = getCurrentScheduleEvent();
     ScheduleEvent* nextEvent = getNextScheduleEvent();
-    uint16_t currentMinutes = getCurrentMinutesSinceMidnight();
     
     // Get current time with seconds for accurate countdown
     time_t now = time(NULL);
     struct tm* timeinfo = localtime(&now);
+    
+    // Calculate current minutes and seconds since midnight
+    uint16_t currentMinutes = timeinfo->tm_hour * 60 + timeinfo->tm_min;
     uint32_t currentSeconds = currentMinutes * 60 + timeinfo->tm_sec;
     
     if (currentEvent) {
         // Current event is active - countdown to when it ENDS
-        uint16_t minutesRemaining = getMinutesRemainingInCurrentEvent();
         uint32_t eventEndSeconds = (currentEvent->start + (currentEvent->duration / 60)) * 60;
         uint32_t secondsRemaining = eventEndSeconds - currentSeconds;
         
@@ -283,7 +284,9 @@ void ui_Screen1_updateCountdown(void)
         update_event_text(currentEvent->label);
         update_time_text(countdownStr);
         
-        printf("[SCREEN1] Current event: %s ends in %s\\n", currentEvent->label, countdownStr);
+        printf("[SCREEN1] Current event: %s ends in %s (now=%02d:%02d, event_end=%u min)\\n", 
+               currentEvent->label, countdownStr, timeinfo->tm_hour, timeinfo->tm_min, 
+               currentEvent->start + (currentEvent->duration / 60));
     } else if (nextEvent) {
         // No current event - hide labels but keep arc animating silently
         lv_label_set_text(ui_eventLabel, "");

@@ -6,6 +6,7 @@
 #include "ui.h"
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include "schedule_manager.h"
 
 lv_obj_t *ui_Screen2 = NULL;lv_obj_t *ui_Panel7 = NULL;lv_obj_t *ui_Arc6 = NULL;lv_obj_t *ui_dividerTop = NULL;lv_obj_t *ui_dividerBot = NULL;lv_obj_t *ui_timer_arc3 = NULL;lv_obj_t *ui_Image6 = NULL;lv_obj_t *ui_Button3 = NULL;lv_obj_t *ui_Container2 = NULL;lv_obj_t *ui_Container3 = NULL;lv_obj_t *ui_Label7 = NULL;lv_obj_t *ui_Label6 = NULL;lv_obj_t *ui_Container6 = NULL;lv_obj_t *ui_Label12 = NULL;lv_obj_t *ui_Label13 = NULL;lv_obj_t *ui_Container7 = NULL;lv_obj_t *ui_Label15 = NULL;lv_obj_t *ui_Label10 = NULL;lv_obj_t *ui_Container8 = NULL;lv_obj_t *ui_Label17 = NULL;lv_obj_t *ui_Label14 = NULL;lv_obj_t *ui_Container9 = NULL;lv_obj_t *ui_Label18 = NULL;lv_obj_t *ui_Label19 = NULL;lv_obj_t *ui_Container1 = NULL;lv_obj_t *ui_Label1 = NULL;lv_obj_t *ui_Label3 = NULL;lv_obj_t *ui_Container4 = NULL;lv_obj_t *ui_Label4 = NULL;lv_obj_t *ui_Label8 = NULL;lv_obj_t *ui_Image9 = NULL;lv_obj_t *ui_Button4 = NULL;lv_obj_t *ui_Panel3 = NULL;
@@ -26,135 +27,278 @@ if ( event_code == LV_EVENT_RELEASED) {
 }
 }
 
+// Scroll event handler for transform effect
+static void ui_Screen2_scroll_event_cb(lv_event_t * e)
+{
+    lv_obj_t * cont = lv_event_get_target_obj(e);
+
+    lv_area_t cont_a;
+    lv_obj_get_coords(cont, &cont_a);
+    int32_t cont_y_center = cont_a.y1 + lv_area_get_height(&cont_a) / 2;
+
+    int32_t r = lv_obj_get_height(cont) * 4 / 10;  // Radius for circle effect
+    int32_t i;
+    int32_t child_cnt = (int32_t)lv_obj_get_child_count(cont);
+    for(i = 0; i < child_cnt; i++) {
+        lv_obj_t * child = lv_obj_get_child(cont, i);
+        lv_area_t child_a;
+        lv_obj_get_coords(child, &child_a);
+
+        int32_t child_y_center = child_a.y1 + lv_area_get_height(&child_a) / 2;
+
+        int32_t diff_y = child_y_center - cont_y_center;
+        diff_y = LV_ABS(diff_y);
+
+        // Get the x of diff_y on a circle
+        int32_t x;
+        // If diff_y is out of the circle use the last point of the circle (the radius)
+        if(diff_y >= r) {
+            x = r;
+        }
+        else {
+            // Use Pythagoras theorem to get x from radius and y
+            uint32_t x_sqr = r * r - diff_y * diff_y;
+            lv_sqrt_res_t res;
+            lv_sqrt(x_sqr, &res, 0x8000);
+            x = r - res.i;
+        }
+
+        // Translate the item by the calculated X coordinate (push right for center item)
+        lv_obj_set_style_translate_x(child, x, 0);
+
+        // Opacity effect: center item fully opaque, edges fade out
+        lv_opa_t opa = (lv_opa_t)lv_map(x, 0, r, LV_OPA_COVER, 200);
+        lv_obj_set_style_opa(child, opa, 0);
+    }
+}
+
 // Update schedule display with actual data from duration.json
 void ui_Screen2_updateScheduleDisplay(void)
 {
     printf("[SCREEN2] updateScheduleDisplay() called\n");
     
-    if (!ui_Label7 || !ui_Label6 || !ui_Label12 || !ui_Label13) {
-        printf("[SCREEN2] WARNING: Labels not initialized yet\n");
-        return; // Labels not initialized yet
-    }
-
     // Get all events for the day
     ScheduleEvent* allEvents[16];
     size_t eventCount = getAllScheduleEvents(allEvents, 16);
-    uint16_t currentMinutes = getCurrentMinutesSinceMidnight();
+    
+    time_t now = time(NULL);
+    struct tm* timeinfo = localtime(&now);
+    uint16_t currentMinutes = timeinfo->tm_hour * 60 + timeinfo->tm_min;
     
     printf("[SCREEN2] Total events loaded: %u, current time: %u min\n", 
         (unsigned int)eventCount, currentMinutes);
 
+    // Find or create scroll container for events
+    if (!ui_Container2) {
+        printf("[SCREEN2] WARNING: Container not initialized\n");
+        return;
+    }
+    
+    // Configure container for scroll effect
+    lv_obj_set_size(ui_Container2, 380, 300);  // Make container larger
+    lv_obj_set_flex_flow(ui_Container2, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_scroll_dir(ui_Container2, LV_DIR_VER);
+    lv_obj_set_scroll_snap_y(ui_Container2, LV_SCROLL_SNAP_CENTER);
+    lv_obj_set_scrollbar_mode(ui_Container2, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_style_bg_opa(ui_Container2, 0, LV_PART_MAIN);  // Transparent background
+    
+    // Add scroll event callback for transform effect
+    lv_obj_add_event_cb(ui_Container2, ui_Screen2_scroll_event_cb, LV_EVENT_SCROLL, NULL);
+    
+    // Clear existing children (delete all event rows)
+    lv_obj_t* child;
+    while ((child = lv_obj_get_child(ui_Container2, 0)) != NULL) {
+        lv_obj_delete(child);
+    }
+
     // If no events at all, show "No Events Today"
     if (eventCount == 0) {
         printf("[SCREEN2] No events found, showing 'No Events Today'\n");
-        lv_obj_add_flag(ui_Label7, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_Label6, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_set_width(ui_Label6, 300);
-        lv_obj_set_x(ui_Label6, 0);
-        lv_label_set_text(ui_Label6, "No Events Today");
-        
-        lv_obj_add_flag(ui_Label12, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_t* label = lv_label_create(ui_Container2);
+        lv_label_set_text(label, "No Events Today");
+        lv_obj_center(label);
         return;
     }
 
-    // Find current event (if any)
-    ScheduleEvent* currentEvent = NULL;
+    // Track which container should be scrolled to (the one with current/now)
+    lv_obj_t* goldEventContainer = NULL;
+
+    // Create dynamic rows for each event
     for (size_t i = 0; i < eventCount; i++) {
-        uint16_t eventEnd = allEvents[i]->start + (allEvents[i]->duration / 60);
-        if (currentMinutes >= allEvents[i]->start && currentMinutes < eventEnd) {
-            currentEvent = allEvents[i];
-            break;
+        ScheduleEvent* event = allEvents[i];
+        uint16_t eventEnd = event->start + (event->duration / 60);
+        bool isCurrent = (currentMinutes >= event->start && currentMinutes < eventEnd);
+        bool isPast = (currentMinutes >= eventEnd);
+        
+        // Insert "Now" container before the first future event (between past and future)
+        if (!isCurrent && !isPast && i > 0) {
+            // Check if the previous event was past
+            ScheduleEvent* prevEvent = allEvents[i-1];
+            uint16_t prevEventEnd = prevEvent->start + (prevEvent->duration / 60);
+            if (currentMinutes >= prevEventEnd) {
+                // Insert "Now" container here
+                lv_obj_t* nowContainer = lv_obj_create(ui_Container2);
+                lv_obj_set_width(nowContainer, lv_pct(100));
+                lv_obj_set_height(nowContainer, 90);
+                lv_obj_set_style_pad_all(nowContainer, 10, LV_PART_MAIN);
+                lv_obj_set_style_border_side(nowContainer, LV_BORDER_SIDE_BOTTOM, LV_PART_MAIN);
+                lv_obj_set_style_bg_color(nowContainer, lv_color_hex(0xF5F5F5), LV_PART_MAIN);
+                lv_obj_set_style_bg_opa(nowContainer, 0, LV_PART_MAIN);
+                lv_obj_set_flex_flow(nowContainer, LV_FLEX_FLOW_ROW);
+                lv_obj_set_flex_align(nowContainer, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+                lv_obj_remove_flag(nowContainer, LV_OBJ_FLAG_SCROLLABLE);
+                
+                // Time label with current time
+                lv_obj_t* nowTimeLabel = lv_label_create(nowContainer);
+                char nowTimeStr[8];
+                snprintf(nowTimeStr, sizeof(nowTimeStr), "%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min);
+                lv_label_set_text(nowTimeLabel, nowTimeStr);
+                lv_obj_set_width(nowTimeLabel, 80);
+                lv_obj_set_style_text_font(nowTimeLabel, &lv_font_montserrat_28, LV_PART_MAIN);
+                lv_obj_set_style_text_color(nowTimeLabel, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+                
+                // "Now" label
+                lv_obj_t* nowLabelScroll = lv_obj_create(nowContainer);
+                lv_obj_set_flex_grow(nowLabelScroll, 1);
+                lv_obj_set_height(nowLabelScroll, 70);
+                lv_obj_set_scroll_dir(nowLabelScroll, LV_DIR_HOR);
+                lv_obj_set_scrollbar_mode(nowLabelScroll, LV_SCROLLBAR_MODE_OFF);
+                lv_obj_set_style_bg_opa(nowLabelScroll, 0, LV_PART_MAIN);
+                lv_obj_set_style_border_side(nowLabelScroll, LV_BORDER_SIDE_NONE, LV_PART_MAIN);
+                lv_obj_remove_flag(nowLabelScroll, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
+                
+                lv_obj_t* nowLabel = lv_label_create(nowLabelScroll);
+                lv_label_set_text(nowLabel, "Now");
+                lv_obj_set_style_text_font(nowLabel, &lv_font_montserrat_28, LV_PART_MAIN);
+                lv_obj_set_style_text_color(nowLabel, lv_color_hex(0xFFD700), LV_PART_MAIN);
+                lv_obj_set_align(nowLabel, LV_ALIGN_LEFT_MID);
+                
+                goldEventContainer = nowContainer;  // Track this as the gold container
+                printf("[SCREEN2] Inserted NOW container at current time: %02d:%02d\n", 
+                    timeinfo->tm_hour, timeinfo->tm_min);
+            }
+        }
+        
+        // Create container for this event row
+        lv_obj_t* eventContainer = lv_obj_create(ui_Container2);
+        lv_obj_set_width(eventContainer, lv_pct(100));
+        lv_obj_set_height(eventContainer, 90);
+        lv_obj_set_style_pad_all(eventContainer, 10, LV_PART_MAIN);
+        lv_obj_set_style_border_side(eventContainer, LV_BORDER_SIDE_BOTTOM, LV_PART_MAIN);
+        lv_obj_set_style_bg_color(eventContainer, lv_color_hex(0xF5F5F5), LV_PART_MAIN);
+        lv_obj_set_style_bg_opa(eventContainer, 0, LV_PART_MAIN);
+        lv_obj_set_flex_flow(eventContainer, LV_FLEX_FLOW_ROW);
+        lv_obj_set_flex_align(eventContainer, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        lv_obj_remove_flag(eventContainer, LV_OBJ_FLAG_SCROLLABLE);
+        
+        // Create time label (left side)
+        lv_obj_t* timeLabel = lv_label_create(eventContainer);
+        char timeStr[8];
+        getTimeDisplayFormat(event->start, timeStr, sizeof(timeStr));
+        lv_label_set_text(timeLabel, timeStr);
+        lv_obj_set_width(timeLabel, 80);
+        lv_obj_set_style_text_font(timeLabel, &lv_font_montserrat_28, LV_PART_MAIN);
+        lv_obj_set_style_text_color(timeLabel, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+        
+        // Create scroll container for event label (handles horizontal overflow)
+        lv_obj_t* eventLabelScroll = lv_obj_create(eventContainer);
+        lv_obj_set_flex_grow(eventLabelScroll, 1);
+        lv_obj_set_height(eventLabelScroll, 70);
+        lv_obj_set_scroll_dir(eventLabelScroll, LV_DIR_HOR);
+        lv_obj_set_scrollbar_mode(eventLabelScroll, LV_SCROLLBAR_MODE_OFF);
+        lv_obj_set_style_bg_opa(eventLabelScroll, 0, LV_PART_MAIN);  // Transparent background
+        lv_obj_set_style_border_side(eventLabelScroll, LV_BORDER_SIDE_NONE, LV_PART_MAIN);
+        lv_obj_remove_flag(eventLabelScroll, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
+        
+        // Create event label inside scroll container
+        lv_obj_t* eventLabel = lv_label_create(eventLabelScroll);
+        lv_obj_set_style_text_font(eventLabel, &lv_font_montserrat_28, LV_PART_MAIN);
+        lv_obj_set_align(eventLabel, LV_ALIGN_LEFT_MID);
+        
+        // Set text and color based on event state
+        if (isCurrent) {
+            // Current event - shown in gold
+            lv_label_set_text(eventLabel, event->label);
+            lv_obj_set_style_text_color(eventLabel, lv_color_hex(0xFFD700), LV_PART_MAIN);
+            goldEventContainer = eventContainer;  // Track current event for scroll
+            printf("[SCREEN2] Event %u: %s (CURRENT)\n", 
+                (unsigned int)i, event->label);
+        } else if (isPast) {
+            // Past event - show in gray
+            lv_label_set_text(eventLabel, event->label);
+            lv_obj_set_style_text_color(eventLabel, lv_color_hex(0x808080), LV_PART_MAIN);
+            printf("[SCREEN2] Event %u: %s (past)\n", (unsigned int)i, event->label);
+        } else {
+            // Future event - show in white
+            lv_label_set_text(eventLabel, event->label);
+            lv_obj_set_style_text_color(eventLabel, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+            printf("[SCREEN2] Event %u: %s (upcoming)\n", (unsigned int)i, event->label);
         }
     }
-
-    // If we have a current event, show it + the next one
-    // Otherwise, show the first two upcoming/past events (for all-day view)
-    if (currentEvent != NULL) {
-        // Display current event
-        lv_obj_remove_flag(ui_Label7, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(ui_Label6, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_set_width(ui_Label6, LV_SIZE_CONTENT);
-        
-        char timeStr[8];
-        getTimeDisplayFormat(currentEvent->start, timeStr, sizeof(timeStr));
-        lv_label_set_text(ui_Label7, timeStr);
-        
-        uint16_t remaining = getMinutesRemainingInCurrentEvent();
-        char currentText[64];
-        snprintf(currentText, sizeof(currentText), "%s (NOW - %u min left)", 
-            currentEvent->label, remaining);
-        lv_label_set_text(ui_Label6, currentText);
-        lv_obj_set_style_text_color(ui_Label6, lv_color_hex(0xFFD700), LV_PART_MAIN);
-        printf("[SCREEN2] Row 1: Current event: %s (%u min remaining)\n", 
-            currentEvent->label, remaining);
-        
-        // Find and display next event
-        ScheduleEvent* nextEvent = NULL;
-        for (size_t i = 0; i < eventCount; i++) {
-            if (allEvents[i]->start > currentMinutes) {
-                nextEvent = allEvents[i];
-                break;
-            }
+    
+    // Check if we need to add "Now" at the beginning (all events are in the future)
+    bool hasCurrentOrPast = false;
+    for (size_t i = 0; i < eventCount; i++) {
+        uint16_t eventEnd = allEvents[i]->start + (allEvents[i]->duration / 60);
+        if (currentMinutes < allEvents[i]->start) {
+            break;  // Found first future event, stop checking
         }
+        hasCurrentOrPast = true;  // At least one past or current event
+    }
+    
+    // If no current event and all events are in the future, add "Now" at the beginning
+    ScheduleEvent* currentEvent = getCurrentScheduleEvent();
+    if (!currentEvent && !hasCurrentOrPast && eventCount > 0) {
+        lv_obj_t* nowContainer = lv_obj_create(ui_Container2);
+        lv_obj_move_to_index(nowContainer, 0);  // Move to front
+        lv_obj_set_width(nowContainer, lv_pct(100));
+        lv_obj_set_height(nowContainer, 90);
+        lv_obj_set_style_pad_all(nowContainer, 10, LV_PART_MAIN);
+        lv_obj_set_style_border_side(nowContainer, LV_BORDER_SIDE_BOTTOM, LV_PART_MAIN);
+        lv_obj_set_style_bg_color(nowContainer, lv_color_hex(0xF5F5F5), LV_PART_MAIN);
+        lv_obj_set_style_bg_opa(nowContainer, 0, LV_PART_MAIN);
+        lv_obj_set_flex_flow(nowContainer, LV_FLEX_FLOW_ROW);
+        lv_obj_set_flex_align(nowContainer, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        lv_obj_remove_flag(nowContainer, LV_OBJ_FLAG_SCROLLABLE);
         
-        if (nextEvent != NULL) {
-            lv_obj_remove_flag(ui_Label12, LV_OBJ_FLAG_HIDDEN);
-            lv_obj_remove_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
-            lv_obj_set_width(ui_Label13, LV_SIZE_CONTENT);
-            
-            getTimeDisplayFormat(nextEvent->start, timeStr, sizeof(timeStr));
-            lv_label_set_text(ui_Label12, timeStr);
-            lv_label_set_text(ui_Label13, nextEvent->label);
-            lv_obj_set_style_text_color(ui_Label13, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
-            printf("[SCREEN2] Row 2: Next event: %s\n", nextEvent->label);
-        } else {
-            lv_obj_add_flag(ui_Label12, LV_OBJ_FLAG_HIDDEN);
-            lv_obj_add_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
-            printf("[SCREEN2] Row 2: No upcoming events\n");
-        }
+        // Time label with current time
+        lv_obj_t* nowTimeLabel = lv_label_create(nowContainer);
+        char nowTimeStr[8];
+        snprintf(nowTimeStr, sizeof(nowTimeStr), "%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min);
+        lv_label_set_text(nowTimeLabel, nowTimeStr);
+        lv_obj_set_width(nowTimeLabel, 80);
+        lv_obj_set_style_text_font(nowTimeLabel, &lv_font_montserrat_28, LV_PART_MAIN);
+        lv_obj_set_style_text_color(nowTimeLabel, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+        
+        // "Now" label
+        lv_obj_t* nowLabelScroll = lv_obj_create(nowContainer);
+        lv_obj_set_flex_grow(nowLabelScroll, 1);
+        lv_obj_set_height(nowLabelScroll, 70);
+        lv_obj_set_scroll_dir(nowLabelScroll, LV_DIR_HOR);
+        lv_obj_set_scrollbar_mode(nowLabelScroll, LV_SCROLLBAR_MODE_OFF);
+        lv_obj_set_style_bg_opa(nowLabelScroll, 0, LV_PART_MAIN);
+        lv_obj_set_style_border_side(nowLabelScroll, LV_BORDER_SIDE_NONE, LV_PART_MAIN);
+        lv_obj_remove_flag(nowLabelScroll, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
+        
+        lv_obj_t* nowLabel = lv_label_create(nowLabelScroll);
+        lv_label_set_text(nowLabel, "Now");
+        lv_obj_set_style_text_font(nowLabel, &lv_font_montserrat_28, LV_PART_MAIN);
+        lv_obj_set_style_text_color(nowLabel, lv_color_hex(0xFFD700), LV_PART_MAIN);
+        lv_obj_set_align(nowLabel, LV_ALIGN_LEFT_MID);
+        
+        goldEventContainer = nowContainer;  // Track "Now" for scroll
+        printf("[SCREEN2] Inserted NOW container at beginning (all events future)\n");
+    }
+    
+    // Trigger scroll event to apply initial transforms
+    lv_obj_send_event(ui_Container2, LV_EVENT_SCROLL, NULL);
+    
+    // Scroll to show event with gold text (current event or "Now") in center
+    if (goldEventContainer) {
+        lv_obj_scroll_to_view(goldEventContainer, LV_ANIM_OFF);
+        printf("[SCREEN2] Scrolled to gold event\n");
     } else {
-        // No current event - show first two events from the day (past or future)
-        if (eventCount >= 1) {
-            lv_obj_remove_flag(ui_Label7, LV_OBJ_FLAG_HIDDEN);
-            lv_obj_remove_flag(ui_Label6, LV_OBJ_FLAG_HIDDEN);
-            lv_obj_set_width(ui_Label6, LV_SIZE_CONTENT);
-            
-            char timeStr[8];
-            getTimeDisplayFormat(allEvents[0]->start, timeStr, sizeof(timeStr));
-            lv_label_set_text(ui_Label7, timeStr);
-            lv_label_set_text(ui_Label6, allEvents[0]->label);
-            
-            // Color based on time: past (gray), future (white)
-            if (allEvents[0]->start > currentMinutes) {
-                lv_obj_set_style_text_color(ui_Label6, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
-            } else {
-                lv_obj_set_style_text_color(ui_Label6, lv_color_hex(0x808080), LV_PART_MAIN);
-            }
-            printf("[SCREEN2] Row 1: Event: %s (past or future)\n", allEvents[0]->label);
-        }
-        
-        if (eventCount >= 2) {
-            lv_obj_remove_flag(ui_Label12, LV_OBJ_FLAG_HIDDEN);
-            lv_obj_remove_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
-            lv_obj_set_width(ui_Label13, LV_SIZE_CONTENT);
-            
-            char timeStr[8];
-            getTimeDisplayFormat(allEvents[1]->start, timeStr, sizeof(timeStr));
-            lv_label_set_text(ui_Label12, timeStr);
-            lv_label_set_text(ui_Label13, allEvents[1]->label);
-            
-            // Color based on time
-            if (allEvents[1]->start > currentMinutes) {
-                lv_obj_set_style_text_color(ui_Label13, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
-            } else {
-                lv_obj_set_style_text_color(ui_Label13, lv_color_hex(0x808080), LV_PART_MAIN);
-            }
-            printf("[SCREEN2] Row 2: Event: %s (past or future)\n", allEvents[1]->label);
-        } else {
-            lv_obj_add_flag(ui_Label12, LV_OBJ_FLAG_HIDDEN);
-            lv_obj_add_flag(ui_Label13, LV_OBJ_FLAG_HIDDEN);
-        }
+        lv_obj_scroll_to_view(lv_obj_get_child(ui_Container2, 0), LV_ANIM_OFF);
     }
 }
 
@@ -174,10 +318,6 @@ ui_Panel7 = lv_obj_create(ui_Screen2);
 ...
 */
 
-// Just add a simple label to test
-lv_obj_t* test_label = lv_label_create(ui_Screen2);
-lv_label_set_text(test_label, "Screen 2");
-lv_obj_set_align(test_label, LV_ALIGN_CENTER);
 
 // Test: Add back timer arc
 ui_timer_arc3 = lv_arc_create(ui_Screen2);
@@ -188,6 +328,8 @@ lv_arc_set_value(ui_timer_arc3, 90);
 lv_arc_set_bg_angles(ui_timer_arc3, 0, 360);
 lv_arc_set_mode(ui_timer_arc3, LV_ARC_MODE_REVERSE);
 lv_arc_set_rotation(ui_timer_arc3, 270);
+lv_obj_remove_flag(ui_timer_arc3, LV_OBJ_FLAG_CLICKABLE);  // Make non-interactive so scroll passes through
+lv_obj_add_flag(ui_timer_arc3, LV_OBJ_FLAG_IGNORE_LAYOUT);  // Don't interfere with layout
 
 // Background arc styling
 lv_obj_set_style_arc_color(ui_timer_arc3, lv_color_hex(0x304B59), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -265,92 +407,21 @@ lv_obj_set_style_shadow_opa(ui_Button3, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 // Schedule container (empty for now)
 ui_Container2 = lv_obj_create(ui_Screen2);
 lv_obj_remove_style_all(ui_Container2);
-lv_obj_set_width(ui_Container2, 300);
-lv_obj_set_height(ui_Container2, 254);
+lv_obj_set_width(ui_Container2, 380);
+lv_obj_set_height(ui_Container2, 480);  // Match arc height to extend top to bottom
 lv_obj_set_x(ui_Container2, 0);
-lv_obj_set_y(ui_Container2, 1);
+lv_obj_set_y(ui_Container2, 0);  // Center vertically to align with arc center
 lv_obj_set_align(ui_Container2, LV_ALIGN_CENTER);
 lv_obj_set_flex_flow(ui_Container2, LV_FLEX_FLOW_COLUMN);
 lv_obj_set_flex_align(ui_Container2, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
 lv_obj_remove_flag(ui_Container2, LV_OBJ_FLAG_SCROLL_ON_FOCUS);  // Allow automatic scrolling
-lv_obj_set_scrollbar_mode(ui_Container2, LV_SCROLLBAR_MODE_AUTO);  // Show scrollbar when needed
+lv_obj_set_scrollbar_mode(ui_Container2, LV_SCROLLBAR_MODE_OFF);  // No scrollbar
 lv_obj_set_scroll_dir(ui_Container2, LV_DIR_VER);
+lv_obj_set_style_bg_opa(ui_Container2, 0, LV_PART_MAIN);  // Transparent background
 
-// Scrollbar styling for ui_Container2
-lv_obj_set_style_bg_color(ui_Container2, lv_color_hex(0xFFFFFF), LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
-lv_obj_set_style_bg_opa(ui_Container2, 150, LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
-lv_obj_set_style_bg_grad_dir(ui_Container2, LV_GRAD_DIR_VER, LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
+// Bring arc to front so it overlaps the container
+lv_obj_move_foreground(ui_timer_arc3);
 
-// Event Container 1
-ui_Container3 = lv_obj_create(ui_Container2);
-lv_obj_remove_style_all(ui_Container3);
-lv_obj_set_width(ui_Container3, 380);  // Wider to allow horizontal scrolling
-lv_obj_set_height(ui_Container3, 50);
-lv_obj_set_x(ui_Container3, -2);
-lv_obj_set_y(ui_Container3, 45);
-lv_obj_set_align(ui_Container3, LV_ALIGN_CENTER);
-lv_obj_remove_flag(ui_Container3, LV_OBJ_FLAG_SCROLL_ON_FOCUS);  // Enable auto-scroll
-lv_obj_set_scrollbar_mode(ui_Container3, LV_SCROLLBAR_MODE_OFF);
-lv_obj_set_scroll_dir(ui_Container3, LV_DIR_HOR | LV_DIR_VER);  // Allow both directions
-
-ui_Label7 = lv_label_create(ui_Container3);
-lv_obj_set_width(ui_Label7, LV_SIZE_CONTENT);
-lv_obj_set_height(ui_Label7, LV_SIZE_CONTENT);
-lv_obj_set_x(ui_Label7, 0);  // Align to left edge
-lv_obj_set_y(ui_Label7, -2);
-lv_obj_set_align(ui_Label7, LV_ALIGN_LEFT_MID);
-lv_label_set_text(ui_Label7, "01:00");
-lv_obj_set_style_text_color(ui_Label7, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-lv_obj_set_style_text_opa(ui_Label7, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label7, &lv_font_montserrat_24, LV_PART_MAIN | LV_STATE_DEFAULT);
-lv_obj_set_style_margin_right(ui_Label7, 16, LV_PART_MAIN);  // Increased gap between time and label
-
-ui_Label6 = lv_label_create(ui_Container3);
-lv_obj_set_width(ui_Label6, LV_SIZE_CONTENT);
-lv_obj_set_height(ui_Label6, LV_SIZE_CONTENT);
-lv_obj_set_x(ui_Label6, 65);  // Increased gap from time label
-lv_obj_set_y(ui_Label6, -4);
-lv_obj_set_align(ui_Label6, LV_ALIGN_LEFT_MID);
-lv_label_set_text(ui_Label6, "Play Time");
-lv_obj_set_style_text_color(ui_Label6, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-lv_obj_set_style_text_opa(ui_Label6, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label6, &lv_font_montserrat_32, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-// Event Container 2
-ui_Container6 = lv_obj_create(ui_Container2);
-lv_obj_remove_style_all(ui_Container6);
-lv_obj_set_width(ui_Container6, 380);  // Match Container 3 width
-lv_obj_set_height(ui_Container6, 50);
-lv_obj_set_x(ui_Container6, 3);
-lv_obj_set_y(ui_Container6, 102);
-lv_obj_set_align(ui_Container6, LV_ALIGN_CENTER);
-lv_obj_remove_flag(ui_Container6, LV_OBJ_FLAG_SCROLL_ON_FOCUS);  // Enable auto-scroll
-lv_obj_set_scrollbar_mode(ui_Container6, LV_SCROLLBAR_MODE_OFF);
-lv_obj_set_scroll_dir(ui_Container6, LV_DIR_HOR | LV_DIR_VER);
-
-ui_Label12 = lv_label_create(ui_Container6);
-lv_obj_set_width(ui_Label12, LV_SIZE_CONTENT);
-lv_obj_set_height(ui_Label12, LV_SIZE_CONTENT);
-lv_obj_set_x(ui_Label12, 0);  // Align to left edge
-lv_obj_set_y(ui_Label12, -2);
-lv_obj_set_align(ui_Label12, LV_ALIGN_LEFT_MID);
-lv_label_set_text(ui_Label12, "02:00");
-lv_obj_set_style_text_color(ui_Label12, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-lv_obj_set_style_text_opa(ui_Label12, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label12, &lv_font_montserrat_24, LV_PART_MAIN | LV_STATE_DEFAULT);
-lv_obj_set_style_margin_right(ui_Label12, 16, LV_PART_MAIN);  // Increased gap between time and label
-lv_obj_set_style_text_font(ui_Label12, &lv_font_montserrat_24, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-ui_Label13 = lv_label_create(ui_Container6);
-lv_obj_set_width(ui_Label13, LV_SIZE_CONTENT);
-lv_obj_set_height(ui_Label13, LV_SIZE_CONTENT);
-lv_obj_set_x(ui_Label13, 65);  // Increased gap from time label
-lv_obj_set_y(ui_Label13, -4);
-lv_obj_set_align(ui_Label13, LV_ALIGN_LEFT_MID);
-lv_label_set_text(ui_Label13, "Feeding");
-lv_obj_set_style_text_color(ui_Label13, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-lv_obj_set_style_text_opa(ui_Label13, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label13, &lv_font_montserrat_32, LV_PART_MAIN | LV_STATE_DEFAULT);
 
 // Settings image - moved to left side
 ui_Image9 = lv_image_create(ui_Screen2);
