@@ -3,7 +3,11 @@
 
 #include <Arduino.h>
 #include <lvgl.h>
-#include <cstring>
+#include <string.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // ============ STATE STRUCTURE ============
 struct DisplayState {
@@ -24,7 +28,7 @@ struct DisplayState {
 };
 
 // ============ GLOBAL STATE ============
-extern DisplayState display_state;
+extern struct DisplayState display_state;
 
 // ============ STATE MANAGEMENT FUNCTIONS ============
 
@@ -75,5 +79,9 @@ void render_display_state();
  * Useful if you need to update without waiting for next render_display_state() call
  */
 void force_update_ui();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // DISPLAY_STATE_H

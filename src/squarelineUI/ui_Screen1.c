@@ -4,6 +4,9 @@
 // Project name: SquareLine_Project
 
 #include "ui.h"
+#include "schedule_manager.h"
+#include "display_helpers.h"
+#include <time.h>
 
 lv_obj_t *uic_Arc3;
 lv_obj_t *ui_Screen1 = NULL;
@@ -16,6 +19,7 @@ lv_obj_t *ui_pageChangeButton = NULL;
 lv_obj_t *ui_Container5 = NULL;
 lv_obj_t *ui_timeLabel = NULL;
 lv_obj_t *ui_eventLabel = NULL;
+lv_obj_t *ui_currentTimeLabel = NULL;
 lv_obj_t *ui_Container14 = NULL;
 lv_obj_t *ui_batteryBar3 = NULL;
 lv_obj_t *ui_batteryPercent3 = NULL;
@@ -50,7 +54,7 @@ lv_obj_set_style_bg_color(ui_Screen1, lv_color_hex(0x000000), LV_PART_MAIN | LV_
 lv_obj_set_style_bg_opa(ui_Screen1, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 
 ui_Image1 = lv_image_create(ui_Screen1);
-lv_image_set_src(ui_Image1, &ui_img_backpacks_png);
+// lv_image_set_src(ui_Image1, &ui_img_backpacks_png);  // Image moved to SD card
 lv_obj_set_width( ui_Image1, LV_SIZE_CONTENT);  /// 1
 lv_obj_set_height( ui_Image1, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_align( ui_Image1, LV_ALIGN_CENTER );
@@ -105,7 +109,7 @@ lv_obj_set_style_bg_color(ui_timer_arc, lv_color_hex(0xFFFFFF), LV_PART_KNOB | L
 lv_obj_set_style_bg_opa(ui_timer_arc, 0, LV_PART_KNOB| LV_STATE_DEFAULT);
 
 ui_Image5 = lv_image_create(ui_Screen1);
-lv_image_set_src(ui_Image5, &ui_img_rightarrow2_png);
+// lv_image_set_src(ui_Image5, &ui_img_rightarrow2_png);  // Image moved to SD card
 lv_obj_set_width( ui_Image5, LV_SIZE_CONTENT);  /// 20
 lv_obj_set_height( ui_Image5, LV_SIZE_CONTENT);   /// 200
 lv_obj_set_x( ui_Image5, 181 );
@@ -220,6 +224,85 @@ lv_obj_add_event_cb(ui_pageChangeButton, ui_event_pageChangeButton, LV_EVENT_ALL
 lv_obj_add_event_cb(ui_timer_arc, ui_event_timer_arc, LV_EVENT_VALUE_CHANGED, NULL);
 uic_Arc3 = ui_textBackground;
 
+// Create current time label - positioned in middle of screen for visibility during testing
+ui_currentTimeLabel = lv_label_create(ui_Screen1);
+lv_obj_set_width( ui_currentTimeLabel, LV_SIZE_CONTENT);
+lv_obj_set_height( ui_currentTimeLabel, LV_SIZE_CONTENT);
+lv_obj_set_x( ui_currentTimeLabel, 0 );
+lv_obj_set_y( ui_currentTimeLabel, 180 );
+lv_obj_set_align( ui_currentTimeLabel, LV_ALIGN_CENTER );
+lv_label_set_text(ui_currentTimeLabel, "00:00:00");
+lv_obj_set_style_text_color(ui_currentTimeLabel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_obj_set_style_text_font(ui_currentTimeLabel, &lv_font_montserrat_32, LV_PART_MAIN| LV_STATE_DEFAULT);
+
+}
+
+// Update Screen 1 with countdown to current event end OR next event start
+void ui_Screen1_updateCountdown(void)
+{
+    if (!ui_timeLabel || !ui_eventLabel) {
+        return;  // Labels not initialized
+    }
+
+    // Get current and next events
+    ScheduleEvent* currentEvent = getCurrentScheduleEvent();
+    ScheduleEvent* nextEvent = getNextScheduleEvent();
+    
+    // Get current time with seconds for accurate countdown
+    time_t now = time(NULL);
+    struct tm* timeinfo = localtime(&now);
+    
+    // Calculate current minutes and seconds since midnight
+    uint16_t currentMinutes = timeinfo->tm_hour * 60 + timeinfo->tm_min;
+    uint32_t currentSeconds = currentMinutes * 60 + timeinfo->tm_sec;
+    
+    if (currentEvent) {
+        // Current event is active - countdown to when it ENDS
+        uint32_t eventEndSeconds = (currentEvent->start + (currentEvent->duration / 60)) * 60;
+        uint32_t secondsRemaining = eventEndSeconds - currentSeconds;
+        
+        if (secondsRemaining < 0) secondsRemaining = 0;
+        
+        // Convert to hours, minutes, seconds
+        uint16_t hours = secondsRemaining / 3600;
+        uint16_t mins = (secondsRemaining % 3600) / 60;
+        uint16_t secs = secondsRemaining % 60;
+        
+        // Format countdown display
+        char countdownStr[16];
+        if (hours > 0) {
+            // HH:MM:SS format for >= 1 hour
+            snprintf(countdownStr, sizeof(countdownStr), "%u:%02u:%02u", hours, mins, secs);
+        } else {
+            // MM:SS format for < 1 hour
+            snprintf(countdownStr, sizeof(countdownStr), "%u:%02u", mins, secs);
+        }
+        
+        // Update labels directly AND via display_state to prevent overwriting
+        lv_label_set_text(ui_timeLabel, countdownStr);
+        lv_label_set_text(ui_eventLabel, currentEvent->label);
+        update_event_text(currentEvent->label);
+        update_time_text(countdownStr);
+        
+        printf("[SCREEN1] Current event: %s ends in %s (now=%02d:%02d, event_end=%u min)\\n", 
+               currentEvent->label, countdownStr, timeinfo->tm_hour, timeinfo->tm_min, 
+               currentEvent->start + (currentEvent->duration / 60));
+    } else if (nextEvent) {
+        // No current event - hide labels but keep arc animating silently
+        lv_label_set_text(ui_eventLabel, "");
+        lv_label_set_text(ui_timeLabel, "");
+        update_event_text("");
+        update_time_text("");
+        
+        printf("[SCREEN1] No current event, waiting for next event\\n");
+    } else {
+        // No events today - show blank labels
+        lv_label_set_text(ui_eventLabel, "");
+        lv_label_set_text(ui_timeLabel, "");
+        update_event_text("");
+        update_time_text("");
+        printf("[SCREEN1] No events today\\n");
+    }
 }
 
 void ui_Screen1_screen_destroy(void)
@@ -238,6 +321,7 @@ ui_pageChangeButton= NULL;
 ui_Container5= NULL;
 ui_timeLabel= NULL;
 ui_eventLabel= NULL;
+ui_currentTimeLabel= NULL;
 ui_Container14= NULL;
 ui_batteryBar3= NULL;
 ui_batteryPercent3= NULL;

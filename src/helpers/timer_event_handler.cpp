@@ -1,22 +1,35 @@
 #include "timer_event_handler.h"
-#include "JSON_reader.h"
+#include "schedule_manager.h"
 #include <Arduino.h>
 
-#define MAX_EVENTS 18
+#define MAX_EVENTS 1  // Only queue the current event
 
 static readConfig queue[MAX_EVENTS];
 static size_t queue_count = 0;
 static size_t queue_index = 0;
 
+/**
+ * Load the current active event into the queue
+ * If no event is active, queue is empty
+ * This makes the timer FSM time-aware instead of sequentially popping events
+ */
 bool timer_load_queue()
 {
     queue_count = 0;
     queue_index = 0;
-    if (!readJSONQueue(queue, MAX_EVENTS, queue_count)) {
-        Serial.println("Failed to load timer queue");
-        return false;
+    
+    // Get the current active event from schedule manager
+    ScheduleEvent* current_event = getCurrentScheduleEvent();
+    
+    if (current_event) {
+        queue[0] = *current_event;
+        queue_count = 1;
+        Serial.printf("[TIMER] Queue loaded with current event: %s\n", current_event->label);
+        return true;
+    } else {
+        Serial.println("[TIMER] No active event - queue empty");
+        return false;  // Queue is empty (no active event)
     }
-    return true;
 }
 
 bool timer_has_next()

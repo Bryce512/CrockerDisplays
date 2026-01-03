@@ -1,6 +1,7 @@
 #include "timer_functions.h"
 #include "squarelineUI/ui.h"
 #include "alarm.h"
+#include "schedule_manager.h"
 
 // ============ TIMER STATE ============
 TimerState timer = {0, 0, false};
@@ -19,6 +20,14 @@ void start_timer(uint32_t duration) {
 
 void update_timer_display() {
     if (!timer.active) return;
+    
+    // If a schedule event is current, let the schedule countdown display take priority
+    // Only update the arc, not the text labels
+    if (getCurrentScheduleEvent() != NULL) {
+        uint32_t elapsed = millis() - timer.start_time;
+        update_timer(elapsed, timer.duration);
+        return;
+    }
     
     uint32_t elapsed = millis() - timer.start_time;
     

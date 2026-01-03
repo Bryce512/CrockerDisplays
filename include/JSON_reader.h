@@ -1,19 +1,25 @@
-#pragma once
-#include <cstdint>
-
 #ifndef JSON_READER_H
 #define JSON_READER_H
 
-#include <cstddef>
+#include <stdint.h>
+#include <stddef.h>
 
+/* Event configuration structure */
 struct readConfig {
-    uint16_t start = 0;    // start time in 24hr timer
-    uint16_t duration = 0; // duration in seconds
-    char label[32] = "";   // activity label
-    char path[32] = "";    // image path
+    uint16_t start;
+    uint16_t duration;
+    char label[32];
+    char path[32];
 };
 
-//bool readJSON(readConfig& cfg);
-bool readJSONQueue(readConfig* out_events, size_t max_events, size_t& out_count);
-
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+bool readJSONQueue(struct readConfig* out_events, size_t max_events, size_t* out_count);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* JSON_READER_H */
